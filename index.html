@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#080b0f">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -15,10 +15,14 @@
   --amber:#e8a020; --amber-dim:#7a4f08; --amber-glow:#ffc84a;
   --cyan:#00d4e8; --cyan-dim:#004d54; --red:#e83030; --green:#20c870; --magenta:#d06cff;
   --text:#c8d8e8; --text-dim:#6a8294; --mono:'Share Tech Mono',ui-monospace,monospace; --sans:'Lato',system-ui,sans-serif;
-  --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-b:env(safe-area-inset-bottom,0px); --safe-t:env(safe-area-inset-top,0px); --safe-l:env(safe-area-inset-left,0px); --safe-r:env(safe-area-inset-right,0px);
 }
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;-webkit-text-size-adjust:100%}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);font-size:16px;-webkit-text-size-adjust:100%;text-size-adjust:100%}
+/* Lock the page: no rubber-band, no page scroll, no pinch/double-tap zoom. Only <main> and modal bodies scroll. */
+html,body{position:fixed;inset:0;width:100%;overflow:hidden;overscroll-behavior:none;touch-action:pan-x pan-y}
+*{touch-action:pan-x pan-y}
+main,.sheetbd,.aclist,.pagetext,.tooldetail,#composer .qchips,.aitext table,details.think div{touch-action:pan-x pan-y}
 button{font-family:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent}
 input,select,textarea{font-family:inherit;font-size:16px;color:var(--text);background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:10px 12px;outline:none;width:100%}
 input:focus,select:focus,textarea:focus{border-color:var(--amber-dim)}
@@ -26,8 +30,8 @@ textarea{resize:vertical;min-height:90px;line-height:1.45}
 label{font-family:var(--mono);font-size:12px;letter-spacing:1px;color:var(--text-dim);text-transform:uppercase;display:block;margin-bottom:5px}
 .hidden{display:none!important}
 
-#app{display:flex;flex-direction:column;height:100dvh;max-width:860px;margin:0 auto;border-left:1px solid var(--border);border-right:1px solid var(--border)}
-header{padding:12px 16px 10px;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+#app{display:flex;flex-direction:column;height:var(--app-h,100dvh);overflow:hidden;max-width:860px;margin:0 auto;border-left:1px solid var(--border);border-right:1px solid var(--border)}
+header{padding:calc(12px + var(--safe-t)) calc(16px + var(--safe-r)) 10px calc(16px + var(--safe-l));position:relative;z-index:30;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
 .hrow{display:flex;align-items:center;gap:10px}
 .brand{font-family:var(--mono);color:var(--amber);font-size:17px;letter-spacing:2px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .brand .short{display:none}@media(max-width:520px){.brand .long{display:none}.brand .short{display:inline}}
@@ -41,8 +45,8 @@ header{padding:12px 16px 10px;background:var(--surface);border-bottom:1px solid 
 .badge{font-family:var(--mono);font-size:11px;letter-spacing:1px;color:var(--text-dim);border:1px solid var(--border);border-radius:3px;padding:2px 6px}
 .badge.amber{color:var(--amber);border-color:var(--amber-dim)}
 
-main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
-.view{padding:16px}
+main{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-left:var(--safe-l);padding-right:var(--safe-r)}
+.view{padding:16px 16px calc(24px + var(--safe-b))}
 .tabs{display:flex;gap:6px;margin-bottom:14px;background:var(--surface);padding:4px;border-radius:8px;border:1px solid var(--border)}
 .tab{flex:1;background:none;border:none;color:var(--text-dim);font-weight:700;font-size:14px;padding:10px 6px;border-radius:6px}
 .tab.on{background:var(--panel2);color:var(--amber);box-shadow:inset 0 -2px 0 var(--amber)}
@@ -113,7 +117,7 @@ details.think div{font-size:13px;color:var(--text-dim);white-space:pre-wrap;line
 .typing{display:inline-flex;gap:4px;padding:4px 0}.typing span{width:6px;height:6px;border-radius:50%;background:var(--amber);animation:pulse 1s infinite}.typing span:nth-child(2){animation-delay:.2s}.typing span:nth-child(3){animation-delay:.4s}
 .errbox{background:#1a0d0d;border:1px solid #5a1a1a;color:#ff9d9d;border-radius:8px;padding:10px 12px;font-size:14px;white-space:pre-wrap}
 
-#composer{position:sticky;bottom:0;background:var(--surface);border-top:1px solid var(--border);padding:8px 12px calc(10px + var(--safe-b))}
+#composer{position:sticky;bottom:0;z-index:5;background:var(--surface);border-top:1px solid var(--border);padding:8px calc(12px + var(--safe-r)) calc(10px + var(--safe-b)) calc(12px + var(--safe-l))}
 #composer .qchips{flex-wrap:nowrap;overflow-x:auto;margin-bottom:8px;scrollbar-width:none}
 #composer .qchips::-webkit-scrollbar{display:none}
 #composer .qchip{white-space:nowrap}
@@ -136,13 +140,13 @@ mark{background:#4a3405;color:var(--amber-glow);border-radius:2px}
 .mchk input{width:auto}
 
 /* modal */
-.backdrop{position:fixed;inset:0;background:rgba(0,0,0,.82);backdrop-filter:blur(6px);z-index:100;display:flex;align-items:flex-end;justify-content:center}
+.backdrop{position:fixed;inset:0;padding-top:calc(var(--safe-t) + 8px);overscroll-behavior:contain;background:rgba(0,0,0,.82);backdrop-filter:blur(6px);z-index:100;display:flex;align-items:flex-end;justify-content:center}
 @media(min-width:700px){.backdrop{align-items:center}}
-.sheet{background:var(--surface);border:1px solid var(--border2);border-top:2px solid var(--amber);border-radius:14px 14px 0 0;width:100%;max-width:760px;max-height:92dvh;display:flex;flex-direction:column}
+.sheet{background:var(--surface);border:1px solid var(--border2);border-top:2px solid var(--amber);border-radius:14px 14px 0 0;width:100%;max-width:760px;max-height:calc(var(--app-h,100dvh) - var(--safe-t) - 8px);display:flex;flex-direction:column}
 @media(min-width:700px){.sheet{border-radius:12px}}
 .sheethd{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border)}
 .sheethd .tt{flex:1;font-family:var(--mono);color:var(--amber);letter-spacing:1px;font-size:14px}
-.sheetbd{padding:16px;overflow-y:auto;padding-bottom:calc(16px + var(--safe-b))}
+.sheetbd{padding:16px;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-bottom:calc(16px + var(--safe-b))}
 .pagetext{font-family:var(--mono);font-size:12.5px;line-height:1.5;white-space:pre-wrap;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:12px;overflow-x:auto;color:#b8cad8}
 .kv{font-size:13px;color:var(--text-dim);line-height:1.6;margin-bottom:10px;word-break:break-word}
 .kv b{color:var(--text)}
@@ -995,6 +999,23 @@ async function doSearch(){
   }catch(e){$('#sResults').innerHTML=`<div class="errbox">${esc(e.message)}</div>`}
 }
 $('#sGo').onclick=doSearch;$('#sQuery').addEventListener('keydown',e=>{if(e.key==='Enter')doSearch()});
+
+/* ═════════════════ iOS VIEWPORT LOCK ═════════════════ */
+(function lockViewport(){
+  const vv=window.visualViewport;
+  const fit=()=>{const h=vv?vv.height:window.innerHeight;document.documentElement.style.setProperty('--app-h',Math.round(h)+'px');if(window.scrollY||window.scrollX)window.scrollTo(0,0)};
+  fit();
+  if(vv){vv.addEventListener('resize',fit);vv.addEventListener('scroll',()=>{if(window.scrollY)window.scrollTo(0,0)})}
+  window.addEventListener('orientationchange',()=>setTimeout(fit,300));
+  // Block pinch zoom (Safari ignores user-scalable=no in the browser tab)
+  ['gesturestart','gesturechange','gestureend'].forEach(t=>document.addEventListener(t,e=>e.preventDefault(),{passive:false}));
+  document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault()},{passive:false});
+  // Block double-tap zoom
+  let lastTouch=0;
+  document.addEventListener('touchend',e=>{const now=Date.now();if(now-lastTouch<300&&!e.target.closest('input,textarea,select'))e.preventDefault();lastTouch=now},{passive:false});
+  // Stop rubber-banding the whole page when a scroll area is at its top/bottom
+  document.addEventListener('touchmove',e=>{if(e.touches.length===1&&!e.target.closest('main,.sheetbd,.aclist,.pagetext,.tooldetail,#composer .qchips,.aitext table,details.think div,textarea'))e.preventDefault()},{passive:false});
+})();
 
 /* ═════════════════ BOOT ═════════════════ */
 (async function boot(){
