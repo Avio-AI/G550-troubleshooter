@@ -1018,7 +1018,7 @@ $('#btnStart').onclick=async()=>{
   // prefetch FIM procedures so the first turn starts with them in context
   const ctx=[];
   for(const x of f.faults.filter(x=>x.proc).slice(0,4)){try{const p=await getProc(x.proc);if(p){ctx.push(`FIM procedure ${p.id} for "${x.msg}" (cite as [FIM ${p.ata} p${p.pages?p.pages[0]:''}], doc_id ${p.doc}, pdf_page ${p.pdfPage}):\n${p.text.slice(0,14000)}${p.text.length>14000?`\n[…continues: call get_fim_procedure with offset 14000]`:''}`);registerSource({cite:`FIM ${p.ata} p${p.pages?p.pages[0]:''}`,doc_id:p.doc,pdf_page:p.pdfPage})}}catch(e){}}
-  const title=((f.faults[0]&&(f.faults[0].src==='cmc'&&f.faults[0].code?f.faults[0].code+' '+f.faults[0].msg:f.faults[0].msg))||f.desc).slice(0,48);
+  const title=shortTitle(f);
   CASE={id:Date.now().toString(36),title,created:Date.now(),updated:Date.now(),form:f,usage:{in:0,out:0},msgs:[{role:'user',content:[{type:'text',text},...(ctx.length?[{type:'text',text:'<<CONTEXT>> Pre-fetched FIM procedures for the selected messages:\n\n'+ctx.join('\n\n────────\n\n')}]:[])]}]};
   showChat();renderCase();saveCase();runAgent();
 };
@@ -1177,11 +1177,19 @@ async function buildPdf(meta){
   const n=doc.getNumberOfPages();for(let p=1;p<=n;p++){doc.setPage(p);font('normal',8,C.dim);doc.text(pclean(`${meta.reg||APPNAME} · S/N ${meta.sn||'—'} · ${meta.title}`).slice(0,90),M,H-26);doc.text(`Page ${p} of ${n}`,W-M,H-26,{align:'right'})}
   return doc.output('blob');
 }
+function shortTitle(f){
+  // first CAS message, else first CMC fault code, else first five words of the description
+  f=f||{};const all=f.faults||[],cas=all.find(x=>x.src!=='cmc'),cmc=all.find(x=>x.src==='cmc');
+  if(cas&&cas.msg)return cas.msg;
+  if(cmc)return cmc.code||cmc.msg;
+  const w=String(f.desc||'').trim().split(/\s+/).filter(Boolean);
+  return w.length?w.slice(0,5).join(' ')+(w.length>5?'…':''):'Troubleshooting case';
+}
 function exportMeta(){
   const f=CASE.form||{};
-  return {reg:(f.reg||'').toUpperCase(),sn:f.sn||'',times:timesLine(f),title:CASE.title||'Troubleshooting case',opened:new Date(CASE.created).toLocaleString(),model:cfg.model};
+  return {reg:(f.reg||'').toUpperCase(),sn:f.sn||'',times:timesLine(f),title:CASE.form&&(CASE.form.faults||CASE.form.desc)?shortTitle(CASE.form):(CASE.title||'Troubleshooting case'),opened:new Date(CASE.created).toLocaleString(),model:cfg.model};
 }
-function pdfName(meta){const d=new Date(CASE.created).toISOString().slice(0,10);return `${[meta.reg||APPNAME,meta.sn,d,(meta.title||'case').replace(/[^A-Za-z0-9]+/g,'-').slice(0,32)].filter(Boolean).join('_')}.pdf`}
+function pdfName(meta){const d=new Date(CASE.created).toISOString().slice(0,10);return `${[meta.reg||APPNAME,meta.sn,d,(meta.title||'case').replace(/[^A-Za-z0-9]+/g,'-').slice(0,32).replace(/^-+|-+$/g,'')].filter(Boolean).join('_')}.pdf`}
 function exportMarkdown(){
   const meta=exportMeta();
   let out=`# ${APPNAME} Troubleshooting Case — ${CASE.title}\n**Registration:** ${meta.reg||'—'} · **S/N:** ${meta.sn||'—'}${meta.times?`\n**Times:** ${meta.times}`:''}\nOpened ${meta.opened} · model ${cfg.model}\n\n`;
