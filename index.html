@@ -54,7 +54,7 @@ header{padding:calc(12px + var(--safe-t)) calc(16px + var(--safe-r)) 10px calc(1
 main{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding-left:var(--safe-l);padding-right:var(--safe-r)}
 .view{padding:16px 16px calc(24px + var(--safe-b))}
 .tabs{display:flex;gap:6px;margin-bottom:14px;background:var(--surface);padding:4px;border-radius:8px;border:1px solid var(--border)}
-.tab{flex:1;background:none;border:none;color:var(--text-dim);font-weight:700;font-size:14px;padding:10px 4px;border-radius:6px;white-space:nowrap;min-width:0}
+.tab{flex:1;background:none;border:none;color:var(--text-dim);font-weight:700;font-size:14px;padding:10px 6px;border-radius:6px}
 .tab.on{background:var(--panel2);color:var(--amber);box-shadow:inset 0 -2px 0 var(--amber)}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px}
 .card h3{font-family:var(--mono);font-size:13px;letter-spacing:2px;color:var(--cyan);font-weight:400;margin-bottom:10px;text-transform:uppercase}
@@ -187,8 +187,7 @@ mark{background:var(--mark-bg);color:var(--amber-glow);border-radius:2px}
     <section class="view" id="intakeView">
       <div class="tabs">
         <button class="tab on" data-tab="describe">Describe</button>
-        <button class="tab" data-tab="fault">CAS</button>
-        <button class="tab" data-tab="cmc">CMC</button>
+        <button class="tab" data-tab="fault">CAS / CMC</button>
         <button class="tab" data-tab="search">Search</button>
       </div>
 
@@ -199,23 +198,13 @@ mark{background:var(--mark-bg);color:var(--amber-glow);border-radius:2px}
         </div>
 
         <div class="card" id="faultCard">
-          <h3>CAS message</h3>
+          <h3>CAS message or CMC fault code</h3>
           <div class="ac">
-            <input id="faultInput" placeholder="e.g. L PRECOOLER INLET OVERTEMP" autocomplete="off" autocapitalize="characters" spellcheck="false">
+            <input id="faultInput" placeholder="e.g. L PRECOOLER INLET OVERTEMP or 36110BAC" autocomplete="off" autocapitalize="characters" spellcheck="false">
             <div class="aclist hidden" id="faultList"></div>
           </div>
           <div class="chips" id="faultChips"></div>
-          <div class="hint">Searches the FIM fault message index by message text. Add every message that's showing, not just the first.</div>
-        </div>
-
-        <div class="card" id="cmcCard">
-          <h3>CMC fault code</h3>
-          <div class="ac">
-            <input id="cmcInput" placeholder="Code or message, e.g. 36110BAC" autocomplete="off" autocapitalize="characters" spellcheck="false">
-            <div class="aclist hidden" id="cmcList"></div>
-          </div>
-          <div class="chips" id="cmcChips"></div>
-          <div class="hint">Searches the FIM fault message index by CMC fault code (or maintenance message). The matching FIM procedure is loaded into the case.</div>
+          <div class="hint">Searches all 3,733 entries in the FIM fault message index. Add every message that's showing, not just the first.</div>
         </div>
 
         <div class="card">
@@ -906,11 +895,9 @@ function renderBadges(err){
 
 /* ═════════════════ INTAKE ═════════════════ */
 let selFaults=[],acIdx=-1,acItems=[];
-function chipHtml(f,i){const cm=f.src==='cmc'&&f.code;return `<div class="fchip"><div><div class="t">${esc(cm?f.code:f.msg)}</div><div class="m">${cm?(f.custom?'':esc(f.msg)+' · '):(f.code?esc(f.code)+' · ':'')}${esc(f.kind)} · ATA ${esc(f.ata||'?')}${f.page?' · FIM p'+f.page:''}${f.proc?'':(f.custom?' · <span class="warnnote">not in index</span>':' · <span class="warnnote">FIM section not in set</span>')}</div></div><button data-i="${i}" title="Remove">✕</button></div>`}
 function renderFaultChips(){
-  $('#faultChips').innerHTML=selFaults.map((f,i)=>f.src==='cmc'?'':chipHtml(f,i)).join('');
-  $('#cmcChips').innerHTML=selFaults.map((f,i)=>f.src==='cmc'?chipHtml(f,i):'').join('');
-  $$('#faultChips button,#cmcChips button').forEach(b=>b.onclick=()=>{selFaults.splice(+b.dataset.i,1);renderFaultChips()});
+  $('#faultChips').innerHTML=selFaults.map((f,i)=>`<div class="fchip"><div><div class="t">${esc(f.msg)}</div><div class="m">${f.code?esc(f.code)+' · ':''}${esc(f.kind)} · ATA ${esc(f.ata||'?')}${f.page?' · FIM p'+f.page:''}${f.proc?'':(f.custom?' · <span class="warnnote">not in index</span>':' · <span class="warnnote">FIM section not in set</span>')}</div></div><button data-i="${i}" title="Remove">✕</button></div>`).join('');
+  $$('#faultChips button').forEach(b=>b.onclick=()=>{selFaults.splice(+b.dataset.i,1);renderFaultChips()});
 }
 function renderAc(){
   const q=$('#faultInput').value.trim();const L=$('#faultList');
@@ -933,40 +920,6 @@ $('#faultInput').addEventListener('keydown',e=>{
   else if(e.key==='Enter'){e.preventDefault();pickFault(acIdx>=0?acItems[acIdx]:(acItems[0]||null))}
 });
 $('#faultInput').addEventListener('blur',()=>setTimeout(()=>$('#faultList').classList.add('hidden'),150));
-/* ── CMC tab: same FIM index, searched by fault code first ── */
-function searchCmc(q,max=12){
-  const Q=q.toUpperCase().replace(/\s+/g,' ').trim();if(!Q)return [];const terms=Q.split(' ');const out=[];
-  for(const f of DATA.faults){
-    const code=(f.code||'').toUpperCase(),hay=(code+' '+f.msg+' '+f.ata).toUpperCase();
-    if(!terms.every(t=>hay.includes(t)))continue;
-    let s=0;if(code===Q)s+=200;else if(code&&code.startsWith(Q))s+=80;else if(code&&code.includes(Q.replace(/\s/g,'')))s+=40;if(!code)s-=30;if(f.msg.toUpperCase().startsWith(Q))s+=10;s-=f.msg.length/60;
-    out.push([s,f]);
-  }
-  return out.sort((a,b)=>b[0]-a[0]).slice(0,max).map(x=>x[1]);
-}
-let cmcIdx=-1,cmcItems=[];
-function renderCmcAc(){
-  const q=$('#cmcInput').value.trim();const L=$('#cmcList');
-  if(!q||!DATA.ready){L.classList.add('hidden');return}
-  cmcItems=searchCmc(q,12);
-  L.innerHTML=cmcItems.map((f,i)=>`<div class="acitem${i===cmcIdx?' sel':''}" data-i="${i}"><div class="acmsg">${esc(f.code||'(no code)')}</div><div class="acmeta">${esc(f.msg)} · ${esc(f.kind)} · ATA ${esc(f.ata)}${f.page?' · FIM p'+f.page:''}</div></div>`).join('')+
-    `<div class="acitem" data-custom="1"><div class="acmeta">Use “${esc(q)}” as typed</div></div>`;
-  L.classList.remove('hidden');
-  $$('#cmcList .acitem').forEach(el=>el.onmousedown=e=>{e.preventDefault();pickCmc(el.dataset.custom?null:cmcItems[+el.dataset.i])});
-}
-function pickCmc(f){
-  if(!f){const q=$('#cmcInput').value.trim();if(!q)return;const c=q.toUpperCase();f={msg:/\s/.test(c)?c:'(CMC code as typed)',code:/\s/.test(c)?'':c,kind:'as typed',ata:'',page:null,proc:null,custom:true}}
-  f={...f,src:'cmc'};
-  if(!selFaults.some(x=>x.msg===f.msg&&x.code===f.code))selFaults.push(f);
-  $('#cmcInput').value='';cmcIdx=-1;$('#cmcList').classList.add('hidden');renderFaultChips();
-}
-$('#cmcInput').addEventListener('input',()=>{cmcIdx=-1;renderCmcAc()});
-$('#cmcInput').addEventListener('keydown',e=>{
-  if(e.key==='ArrowDown'){cmcIdx=Math.min(cmcIdx+1,cmcItems.length-1);renderCmcAc();e.preventDefault()}
-  else if(e.key==='ArrowUp'){cmcIdx=Math.max(cmcIdx-1,-1);renderCmcAc();e.preventDefault()}
-  else if(e.key==='Enter'){e.preventDefault();pickCmc(cmcIdx>=0?cmcItems[cmcIdx]:(cmcItems[0]||null))}
-});
-$('#cmcInput').addEventListener('blur',()=>setTimeout(()=>$('#cmcList').classList.add('hidden'),150));
 
 const READING_PRESETS=[['Duct / mix temp','°C'],['Bleed press','psi'],['Precooler outlet temp','°C'],['Pack outlet temp','°C'],['Hyd press','psi'],['Oil press','psi'],['Oil temp','°C'],['Fuel temp','°C'],['N1','%'],['N2','%'],['TGT','°C'],['DC bus','V'],['AC bus','V'],['Gen load','A'],['Brake temp','°C'],['Tire press','psi']];
 function addReading(p='',v='',u=''){
@@ -982,9 +935,8 @@ let curTab='describe';
 $$('.tab').forEach(t=>t.onclick=()=>{
   curTab=t.dataset.tab;$$('.tab').forEach(x=>x.classList.toggle('on',x===t));
   $('#caseForm').classList.toggle('hidden',curTab==='search');$('#searchPane').classList.toggle('hidden',curTab!=='search');
-  const top={describe:'#describeCard',fault:'#faultCard',cmc:'#cmcCard'}[curTab];
-  if(top){const order=[top,...['#describeCard','#faultCard','#cmcCard'].filter(x=>x!==top)];const cf=$('#caseForm');for(const id of order.slice().reverse())cf.prepend($(id))}
-  if(curTab==='describe')$('#descText').focus();if(curTab==='cmc')$('#cmcInput').focus();
+  $('#faultCard').style.order='';
+  if(curTab==='describe'){$('#describeCard').after($('#faultCard'));$('#descText').focus()}else if(curTab==='fault'){$('#faultCard').after($('#describeCard'))}
   if(curTab==='search')$('#sQuery').focus();
 });
 const val=id=>$(id).value.trim();
@@ -996,10 +948,7 @@ function caseText(f){
   const L=['NEW TROUBLESHOOTING CASE'];
   if(f.reg||f.sn)L.push(`Aircraft: G550${f.reg?' '+f.reg:''}${f.sn?' s/n '+f.sn:''}`);
   {const tl=timesLine(f);if(tl)L.push(`Times: ${tl}`)}
-  const line=x=>`  • ${x.msg}${x.code?` [code ${x.code}]`:''}${x.ata?` — ATA ${x.ata}`:''}${x.page?`, FIM p${x.page}`:''}${x.proc?`, proc ${x.proc}`:''}${x.custom?' (typed; not matched in FIM index)':''}`;
-  {const cas=f.faults.filter(x=>x.src!=='cmc'),cmc=f.faults.filter(x=>x.src==='cmc');
-   if(cas.length){L.push('CAS messages:');cas.forEach(x=>L.push(line(x)))}
-   if(cmc.length){L.push('CMC fault codes:');cmc.forEach(x=>L.push(line(x)))}}
+  if(f.faults.length){L.push('CAS / CMC messages:');f.faults.forEach(x=>L.push(`  • ${x.msg}${x.code?` [code ${x.code}]`:''}${x.ata?` — ATA ${x.ata}`:''}${x.page?`, FIM p${x.page}`:''}${x.proc?`, proc ${x.proc}`:''}${x.custom?' (typed; not matched in FIM index)':''}`))}
   if(f.desc)L.push(`Description: ${f.desc}`);
   const c=[f.phase&&`Phase: ${f.phase}`,f.behavior&&`Behavior: ${f.behavior}`,f.side&&`Side: ${f.side}`,f.alt&&`Altitude: ${f.alt} ft`,f.spd&&`Speed: ${f.spd}`,f.oat&&`SAT/OAT: ${f.oat} °C`,f.cabAlt&&`Cabin alt: ${f.cabAlt} ft`,f.dp&&`Cabin ΔP: ${f.dp} psi`,f.rate&&`Cabin rate: ${f.rate} fpm`].filter(Boolean);
   if(c.length)L.push('Conditions: '+c.join(' | '));
@@ -1011,7 +960,7 @@ function caseText(f){
 }
 $('#btnStart').onclick=async()=>{
   const f=collectForm();
-  if(!f.faults.length&&!f.desc){$('#descText').focus();flash($('#btnStart'),'ENTER A MESSAGE OR DESCRIPTION');return}
+  if(!f.faults.length&&!f.desc){$('#faultInput').focus();flash($('#btnStart'),'ENTER A MESSAGE OR DESCRIPTION');return}
   if(!DATA.ready){openSettings('Connect the manual data source first.');return}
   if(!cfg.anthropicKey){openSettings('Add your Anthropic API key to start troubleshooting.');return}
   if(f.reg||f.sn)store.set(LAST_AC_KEY,{reg:f.reg,sn:f.sn});
@@ -1019,12 +968,12 @@ $('#btnStart').onclick=async()=>{
   // prefetch FIM procedures so the first turn starts with them in context
   const ctx=[];
   for(const x of f.faults.filter(x=>x.proc).slice(0,4)){try{const p=await getProc(x.proc);if(p){ctx.push(`FIM procedure ${p.id} for "${x.msg}" (cite as [FIM ${p.ata} p${p.pages?p.pages[0]:''}], doc_id ${p.doc}, pdf_page ${p.pdfPage}):\n${p.text.slice(0,14000)}${p.text.length>14000?`\n[…continues: call get_fim_procedure with offset 14000]`:''}`);registerSource({cite:`FIM ${p.ata} p${p.pages?p.pages[0]:''}`,doc_id:p.doc,pdf_page:p.pdfPage})}}catch(e){}}
-  const title=((f.faults[0]&&(f.faults[0].src==='cmc'&&f.faults[0].code?f.faults[0].code+' '+f.faults[0].msg:f.faults[0].msg))||f.desc).slice(0,48);
+  const title=(f.faults[0]?.msg||f.desc).slice(0,48);
   CASE={id:Date.now().toString(36),title,created:Date.now(),updated:Date.now(),form:f,usage:{in:0,out:0},msgs:[{role:'user',content:[{type:'text',text},...(ctx.length?[{type:'text',text:'<<CONTEXT>> Pre-fetched FIM procedures for the selected messages:\n\n'+ctx.join('\n\n────────\n\n')}]:[])]}]};
   showChat();renderCase();saveCase();runAgent();
 };
 function flash(btn,msg){const o=btn.textContent;btn.textContent=msg;btn.disabled=true;setTimeout(()=>{btn.textContent=o;btn.disabled=false},1600)}
-function resetForm(){selFaults=[];renderFaultChips();$('#cmcInput').value='';['#descText','#fAlt','#fSpd','#fOat','#fCabAlt','#fDp','#fRate','#fOther','#fSn','#fReg','#fTT','#fCyc','#fEngHrs','#fEngCyc','#fApuHrs','#fRecent','#fDone','#faultInput'].forEach(i=>$(i).value='');prefillAircraft();$('#timesDetails').open=false;['#fPhase','#fBehavior','#fSide'].forEach(i=>$(i).value='');$('#readings').innerHTML='';$('#moreDetails').open=false}
+function resetForm(){selFaults=[];renderFaultChips();['#descText','#fAlt','#fSpd','#fOat','#fCabAlt','#fDp','#fRate','#fOther','#fSn','#fReg','#fTT','#fCyc','#fEngHrs','#fEngCyc','#fApuHrs','#fRecent','#fDone','#faultInput'].forEach(i=>$(i).value='');prefillAircraft();$('#timesDetails').open=false;['#fPhase','#fBehavior','#fSide'].forEach(i=>$(i).value='');$('#readings').innerHTML='';$('#moreDetails').open=false}
 
 /* ═════════════════ CHAT ═════════════════ */
 function showChat(){$('#intakeView').classList.add('hidden');$('#chatView').classList.remove('hidden')}
