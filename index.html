@@ -321,6 +321,12 @@ const store={
 let cfg={...DEFAULTS,...store.get('g550ts_cfg',{})};
 function saveCfg(){store.set('g550ts_cfg',cfg,cfg.remember)}
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+// all dates: 21 OCT 2026
+const MONS=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+function dmy(d){if(!(d instanceof Date))d=new Date(d);return isNaN(d)?'':`${d.getDate()} ${MONS[d.getMonth()]} ${d.getFullYear()}`}
+function dmyt(d){if(!(d instanceof Date))d=new Date(d);return isNaN(d)?'':`${dmy(d)} ${d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}`}
+// "03/12/2024" or "2026-10-16" -> "12 MAR 2024" / "16 OCT 2026"; anything else unchanged
+function dmyStr(v){v=String(v||'');let m=v.match(/^(\d{4})-(\d{2})-(\d{2})$/);if(m)return dmy(new Date(+m[1],m[2]-1,+m[3]));m=v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);if(m)return dmy(new Date(+m[3],m[1]-1,+m[2]));return v.replace(/\b(\d{1,2})\/(\d{1,2})\/(\d{4})\b/g,(x,a,b,c)=>dmy(new Date(+c,a-1,+b)))}
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 
@@ -597,6 +603,7 @@ Known gaps: ${(m.gaps||[]).join(' | ')}
 Do not stop at one search: search, read the relevant pages, cross-check between manuals. Keep tool calls purposeful (typically 3–10 per turn).
 
 # Rules
+- Write every date as day, three-letter month in capitals, four-digit year: 21 OCT 2026 (also in logbook / corrective-action wording).
 - Cite every manual-derived fact inline using the citation strings returned by tools, in square brackets, e.g. [FIM 36-10-00 p108], [AMM 21-31-00 p3], [WDM 36-00-00 Schematic (PDF p2)], [FSI V1 21-14]. Never invent citations.
 - Never invent part numbers, limits, tolerances, torque values, pin numbers, wire numbers or task numbers. If you cannot find it, say so and point to where it should be.
 - Clearly label anything from general experience rather than these manuals as "General knowledge (not from the manuals)".
@@ -837,7 +844,7 @@ async function openPage(docId,page){
   const pg=await getPage(docId,page);if(!pg){showModal('Page','<div class="errbox">Page not found.</div>');return}
   const d=pg.doc;
   const local=`C:\\Gulfstream PDFs\\${d.path.replace(/\//g,'\\')}`;
-  showModal(pg.cite,`<div class="kv"><b>${esc(d.m)} — ${esc(d.title)}</b><br>${esc(d.type||'')} · ATA ${esc(d.ata||'—')} · page ${page} of ${d.pages} · rev ${esc(d.rev||'')}<br>PDF: <span style="font-family:var(--mono);font-size:12px">${esc(local)}</span> (page ${page})</div>
+  showModal(pg.cite,`<div class="kv"><b>${esc(d.m)} — ${esc(d.title)}</b><br>${esc(d.type||'')} · ATA ${esc(d.ata||'—')} · page ${page} of ${d.pages} · rev ${esc(dmyStr(d.rev||''))}<br>PDF: <span style="font-family:var(--mono);font-size:12px">${esc(local)}</span> (page ${page})</div>
    <div style="display:flex;gap:8px;margin-bottom:10px"><button class="btn2 small" id="pgPrev" ${page<=1?'disabled':''}>◂ Prev</button><button class="btn2 small" id="pgNext" ${page>=d.pages?'disabled':''}>Next ▸</button><button class="btn2 small" id="pgCopy">Copy text</button></div>
    <div class="pagetext">${esc(pg.text)}</div>`);
   $('#pgPrev').onclick=()=>openPage(docId,page-1);$('#pgNext').onclick=()=>openPage(docId,page+1);
@@ -884,7 +891,7 @@ function openSettings(note){
   <div id="stAbout" class="disclaimer" style="margin-top:14px"></div>`);
   $('#stTheme').onchange=e=>setTheme(e.target.value);
   const sync=()=>{const gh=$('#stMode').value==='github';$('#stGh').classList.toggle('hidden',!gh);$('#stUrl').classList.toggle('hidden',gh)};sync();$('#stMode').onchange=sync;
-  if(DATA.manifest)$('#stAbout').innerHTML=`<b>Library:</b> ${esc(DATA.manifest.aircraft)} · index built ${esc(DATA.manifest.built)}<br>${Object.entries(DATA.manifest.revisions).map(([k,v])=>`${k}: ${esc(v)}`).join(' · ')}<br><b>Known gaps:</b> ${DATA.manifest.gaps.map(esc).join(' · ')}`;
+  if(DATA.manifest)$('#stAbout').innerHTML=`<b>Library:</b> ${esc(DATA.manifest.aircraft)} · index built ${esc(dmyStr(DATA.manifest.built))}<br>${Object.entries(DATA.manifest.revisions).map(([k,v])=>`${k}: ${esc(dmyStr(v))}`).join(' · ')}<br><b>Known gaps:</b> ${DATA.manifest.gaps.map(esc).join(' · ')}`;
   $('#stSave').onclick=async()=>{
     Object.assign(cfg,{anthropicKey:$('#stKey').value.trim(),model:$('#stModel').value,thinking:$('#stThink').checked,dataMode:$('#stMode').value,dataRepo:$('#stRepo').value.trim(),dataBranch:$('#stBranch').value.trim()||'main',githubToken:$('#stTok').value.trim(),dataUrl:$('#stDataUrl').value.trim(),remember:$('#stRemember').checked});
     saveCfg();DATA.shards.clear();DATA.fim.clear();$('#stStatus').textContent='Connecting…';
@@ -1080,11 +1087,9 @@ function caseListLabel(c){
   if(!ata&&c.deferral&&typeof melById==='function'&&typeof MEL!=='undefined'&&MEL){const g=melById(c.deferral.mel_id);if(g&&g.ata)ata=g.ata}
   return `${tail} · ATA ${ata||'—'} · ${dmy(new Date(c.created||c.updated))}`;
 }
-// 21 OCT 2026
-function dmy(d){return `${d.getDate()} ${['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][d.getMonth()]} ${d.getFullYear()}`}
 $('#btnCases').onclick=()=>{
   const cases=loadCases();
-  showModal('RECENT CASES',cases.length?`<div class="caselist">${cases.map(c=>`<div class="ci"><div class="t" data-id="${c.id}"><div>${esc(caseListLabel(c))}</div><div>Updated ${dmy(new Date(c.updated))} ${new Date(c.updated).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})} · ${(n=>n+(n===1?' reply':' replies'))(c.msgs.filter(m=>m.role==='assistant').length)}</div></div><button class="btn2 small danger" data-del="${c.id}">Delete</button></div>`).join('')}</div>`:'<div class="kv">No saved cases on this device yet.</div>');
+  showModal('RECENT CASES',cases.length?`<div class="caselist">${cases.map(c=>`<div class="ci"><div class="t" data-id="${c.id}"><div>${esc(caseListLabel(c))}</div><div>Updated ${dmyt(c.updated)} · ${(n=>n+(n===1?' reply':' replies'))(c.msgs.filter(m=>m.role==='assistant').length)}</div></div><button class="btn2 small danger" data-del="${c.id}">Delete</button></div>`).join('')}</div>`:'<div class="kv">No saved cases on this device yet.</div>');
   $$('.caselist .t').forEach(el=>el.onclick=()=>{CASE=loadCases().find(c=>c.id===el.dataset.id);hideModal();showChat();renderCase()});
   $$('.caselist [data-del]').forEach(b=>b.onclick=()=>{const cs=loadCases().filter(c=>c.id!==b.dataset.del);try{localStorage.setItem('g550ts_cases',JSON.stringify(cs))}catch(e){}if(CASE&&CASE.id===b.dataset.del){CASE=null;showIntake()}$('#btnCases').onclick()});
 };
@@ -1184,7 +1189,7 @@ async function buildPdf(meta){
   // ── page 1 summary block
   header();
   font('bold',15,C.ink);doc.text(doc.splitTextToSize(pclean(meta.title),CW),M,y+14);y+=22*Math.min(2,doc.splitTextToSize(pclean(meta.title),CW).length);
-  font('normal',9,C.dim);doc.text(pclean(`${APPNAME}${meta.apt?' · Airport '+meta.apt:''} · Opened ${meta.opened} · Exported ${new Date().toLocaleString()}`),M,y+6,{maxWidth:CW});y+=20;
+  font('normal',9,C.dim);doc.text(pclean(`${APPNAME}${meta.apt?' · Airport '+meta.apt:''} · Opened ${meta.opened} · Exported ${dmyt(new Date())}`),M,y+6,{maxWidth:CW});y+=20;
   // ── conversation
   let lastRole=null;
   for(const m of CASE.msgs){
@@ -1216,7 +1221,7 @@ function shortTitle(f){
 }
 function exportMeta(){
   const f=CASE.form||{};
-  return {reg:(f.reg||'').toUpperCase(),sn:f.sn||'',apt:(f.apt||'').toUpperCase(),times:timesLine(f),title:CASE.form&&(CASE.form.faults||CASE.form.desc)?shortTitle(CASE.form):(CASE.title||'Troubleshooting case'),opened:new Date(CASE.created).toLocaleString(),model:cfg.model};
+  return {reg:(f.reg||'').toUpperCase(),sn:f.sn||'',apt:(f.apt||'').toUpperCase(),times:timesLine(f),title:CASE.form&&(CASE.form.faults||CASE.form.desc)?shortTitle(CASE.form):(CASE.title||'Troubleshooting case'),opened:dmyt(CASE.created),model:cfg.model};
 }
 function caseAta(f){
   // ATA chapter-subchapter from the first CAS / CMC entry that has one, else the chapter alone
@@ -1224,8 +1229,8 @@ function caseAta(f){
   const full=list.find(a=>/^\d\d-\d\d/.test(a));if(full)return full.slice(0,5);
   const ch=list.find(a=>/^\d\d/.test(a));return ch?ch.slice(0,2):'';
 }
-function dateCode(d){d=d||new Date();return String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+String(d.getFullYear()).slice(-2)}
-// file name: TAIL_ATA_MMDDYY  (e.g. N1KE_21-31_102126.pdf)
+function dateCode(d){d=d||new Date();return `${String(d.getDate()).padStart(2,'0')}${MONS[d.getMonth()]}${d.getFullYear()}`}
+// file name: TAIL_ATA_DDMMMYYYY  (e.g. N1KE_21-31_21OCT2026.pdf)
 function pdfName(meta){const tail=(meta.reg||APPNAME).replace(/[^A-Za-z0-9-]/g,'');return `${[tail,caseAta(CASE.form),dateCode(new Date())].filter(Boolean).join('_')}.pdf`}
 function exportMarkdown(){
   const meta=exportMeta();
@@ -1240,7 +1245,7 @@ function exportMarkdown(){
 $('#btnExport').onclick=()=>{
   if(!CASE){showModal('EXPORT','<div class="kv">Open a case first.</div>');return}
   const f=CASE.form=CASE.form||{};
-  showModal('EXPORT CASE',`<div class="kv"><b>${esc(CASE.title)}</b><br>${CASE.msgs.filter(m=>m.role==='assistant').length} replies · opened ${esc(new Date(CASE.created).toLocaleString())}</div>
+  showModal('EXPORT CASE',`<div class="kv"><b>${esc(CASE.title)}</b><br>${CASE.msgs.filter(m=>m.role==='assistant').length} replies · opened ${esc(dmyt(CASE.created))}</div>
     <div class="grid2"><div class="field"><label>Registration</label><input id="exReg" value="${esc(f.reg||'')}" placeholder="N1KE" autocapitalize="characters" autocomplete="off"></div><div class="field"><label>Serial number</label><input id="exSn" value="${esc(f.sn||'')}" placeholder="${esc(SN_HINT)}" autocomplete="off"></div></div>
     <div class="hint" id="exTimes" style="margin:-4px 0 12px">${esc(timesLine(f)||'No aircraft / engine times entered for this case.')}</div>
     <button class="btn" id="exPdf">Create PDF</button>
