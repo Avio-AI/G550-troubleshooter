@@ -39,7 +39,7 @@ label{font-family:var(--mono);font-size:12px;letter-spacing:1px;color:var(--text
 .synclbl{display:flex!important;gap:8px;align-items:center;text-transform:none!important;letter-spacing:0!important;font-family:var(--sans)!important;font-size:14px!important;color:var(--text)!important;cursor:pointer}
 .synclbl input{width:auto;transform:scale(1.15)}
 input[readonly]{opacity:.65}
-#fReg,#fApt,#exReg{text-transform:uppercase}
+#fReg,#fApt,#exReg,#amReg,#amDefLoc,#amSigLoc{text-transform:uppercase}
 
 #app{display:flex;flex-direction:column;height:var(--app-h,100dvh);overflow:hidden;max-width:860px;margin:0 auto;border-left:1px solid var(--border);border-right:1px solid var(--border)}
 header{padding:calc(12px + var(--safe-t)) calc(16px + var(--safe-r)) 10px calc(16px + var(--safe-l));position:relative;z-index:30;background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
@@ -171,6 +171,31 @@ mark{background:var(--mark-bg);color:var(--amber-glow);border-radius:2px}
 .progress div{height:100%;background:var(--cyan);width:0;transition:width .2s}
 .disclaimer{font-size:12px;color:var(--text-dim);line-height:1.5;border-top:1px solid var(--border);padding-top:10px;margin-top:6px}
 
+/* MEL */
+.melhead .melkind{font-family:var(--mono);font-size:12px;color:var(--text-dim);letter-spacing:.5px}
+.melhead .meltitle{font-size:18px;font-weight:800;margin-top:4px;line-height:1.3;display:flex;gap:8px;align-items:baseline;overflow-wrap:anywhere}
+.melauthbox{border-left:3px solid var(--cyan)}
+.melrow{font-size:13.5px;line-height:1.5;margin-bottom:7px;overflow-wrap:anywhere}
+.melrow b{color:var(--strong)}
+.melwarn{background:var(--warn-bg);border:1px solid var(--amber-dim);border-radius:6px;padding:8px 10px;color:var(--text)}
+.melcard{border-left:3px solid var(--amber)}
+.melopt{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.melcat{font-family:var(--mono);font-weight:700;font-size:13px;border-radius:4px;padding:2px 8px;color:var(--on-accent);background:var(--amber)}
+.melcat.catA{background:var(--red);color:#fff}.melcat.catD{background:var(--green);color:#fff}
+.melnum{font-family:var(--mono);font-size:12.5px;color:var(--text-dim)}
+.melauth{font-family:var(--mono);font-size:12px;color:var(--cyan);border:1px solid var(--cyan-dim);border-radius:3px;padding:0 5px}
+.melint{font-size:13.5px;margin-top:8px;line-height:1.5}
+.melint b{color:var(--amber)}
+.melsec{margin-top:12px;border-top:1px solid var(--border);padding-top:9px}
+.melsh{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;margin-bottom:5px}
+.melsh>span:first-child{font-family:var(--mono);font-size:12.5px;letter-spacing:1px;color:var(--cyan);text-transform:uppercase}
+.melwho{font-size:12px;color:var(--text-dim)}
+.melreq{font-family:var(--mono);font-size:10.5px;letter-spacing:1px;color:var(--amber);border:1px solid var(--amber-dim);border-radius:3px;padding:0 4px}
+.melbody{font-size:14px;line-height:1.55;overflow-wrap:anywhere}
+.melsec.dim .melbody{color:var(--text-dim)}
+.melcites{margin:12px 0 10px;display:flex;flex-wrap:wrap;gap:6px}
+.btn.small{width:auto;padding:7px 12px;font-size:13px;font-weight:800;border-radius:8px}
+.amh{font-family:var(--mono);font-size:12.5px;letter-spacing:1.5px;color:var(--cyan);font-weight:400;margin:10px 0 8px;text-transform:uppercase}
 /* ═════════ Google-style (Material 3 / Drive) skin — overrides the rules above ═════════ */
 :root{
   --sans:'Google Sans Text','Google Sans',Roboto,system-ui,-apple-system,'Segoe UI',sans-serif;
@@ -449,6 +474,7 @@ header .gsearch{margin-top:8px}
       <div class="tabs">
         <button class="tab on" data-tab="describe"><span class="pill"><span class="ms">edit_note</span></span>Describe</button>
         <button class="tab" data-tab="search"><span class="pill"><span class="ms">search</span></span>Search</button>
+        <button class="tab" data-tab="mel"><span class="pill"><span class="ms">fact_check</span></span>MEL</button>
       </div>
 
       <div id="caseForm">
@@ -530,6 +556,23 @@ header .gsearch{margin-top:8px}
 
         <button class="btn" id="btnStart">Fix My Plane ▸</button>
         <div class="disclaimer">Troubleshooting aid only. It reasons from the indexed G550 manuals and cites pages, but the current revision of the approved maintenance data governs all maintenance and return-to-service decisions.</div>
+      </div>
+
+      <!-- MEL DISPATCH RELIEF -->
+      <div id="melPane" class="hidden">
+        <div class="card">
+          <h3>MEL Dispatch Relief</h3>
+          <div class="ac">
+            <input id="melInput" placeholder="Inoperative item or CAS message, e.g. Pack Inlet Valve, Yaw Damper, ACS Fail, 21-14" autocomplete="off" autocapitalize="words" spellcheck="false">
+            <div class="aclist hidden" id="melList"></div>
+          </div>
+          <div class="field" style="margin-top:10px"><label>Operating rule</label><select id="melOps"></select></div>
+          <div class="field" style="max-width:300px"><label>Day of Discovery</label><div style="display:flex;gap:6px"><input id="melDate" placeholder="21 OCT 2026" autocapitalize="characters" autocomplete="off" spellcheck="false" style="text-transform:uppercase"><button class="btn2 small" id="melDateBtn" type="button" title="Pick a date" style="position:relative;overflow:hidden">📅<input id="melDatePick" type="date" tabindex="-1" style="position:absolute;inset:0;opacity:0;width:100%;height:100%"></button></div></div>
+          <div class="hint">Finds the MMEL relief (Section 1 items and Section 2 CAS messages), who authorizes dispatch under your operating rule, the repair interval, and the Gulfstream MOPP (M) maintenance, (O) operational and placarding procedures. No AI or API key needed.</div>
+          <div class="hint" id="melStatus"></div>
+          <button class="btn2 small hidden" id="melAmdlBlank" style="margin-top:10px">Discrepancy-Only AMDL (No Deferral)</button>
+        </div>
+        <div id="melResults"></div>
       </div>
 
       <!-- DIRECT SEARCH -->
@@ -645,6 +688,7 @@ async function loadCore(){
   }
 }
 function shardKeyFor(doc,page){
+  if(doc.s)return doc.s;
   if(doc.m==='FSI'){const r=(DATA.fsimap[doc.id]||[]).find(x=>page>=x[0]&&page<=x[1]);return r?r[2]:null}
   if(doc.m==='TPG'){const m=doc.path.match(/\/(\d\d)-(\d\d)-/);return m&&m[1]==='01'?m[2]:'tpg'}
   return doc.ata?doc.ata.slice(0,2):'gen';
@@ -716,7 +760,7 @@ function searchShard(sh,q,manuals){
   }
   return out;
 }
-const MW={AMM:1.15,FIM:1.15,WDM:1,IPC:.9,FSI:1,TPG:.8};
+const MW={AMM:1.15,FIM:1.15,WDM:1,IPC:.9,FSI:1,TPG:.8,MMEL:1,MOPP:1};
 function guessChapters(q,n=3){
   const terms=qtok(q);const sc=new Map();
   const add=(k,v)=>sc.set(k,(sc.get(k)||0)+v);
@@ -747,10 +791,11 @@ function snippet(text,terms,len=650){
   return (s>0?'… ':'')+text.slice(s,e).trim()+(e<text.length?' …':'');
 }
 async function searchManuals(query,{chapters,manuals,max=8}={}){
-  let ch=[...new Set((chapters&&chapters.length?chapters:guessChapters(query)).map(c=>{c=String(c).toLowerCase().trim();if(c==='tpg'||c==='gen')return c;const m=c.match(/\d{1,2}/);return m?m[0].padStart(2,'0'):c}))].filter(k=>DATA.manifest.shards[k]);
+  let ch=[...new Set((chapters&&chapters.length?chapters:guessChapters(query)).map(c=>{c=String(c).toLowerCase().trim();if(c==='tpg'||c==='gen'||c==='mel')return c;const m=c.match(/\d{1,2}/);return m?m[0].padStart(2,'0'):c}))].filter(k=>DATA.manifest.shards[k]);
   if(!ch.length)ch=Object.keys(DATA.manifest.shards);
   const ms=manuals&&manuals.length?new Set(manuals.map(m=>m.toUpperCase())):null;
   if((!ms||ms.has('TPG'))&&!ch.includes('tpg')&&chapters==null)ch.push('tpg');
+  if(ms&&(ms.has('MMEL')||ms.has('MOPP'))&&DATA.manifest.shards.mel&&!ch.includes('mel'))ch.push('mel');
   const shards=(await Promise.all(ch.map(loadShard))).filter(Boolean);
   let res=[];for(const sh of shards)res.push(...searchShard(sh,query,ms));
   res.sort((a,b)=>b.score-a.score);
@@ -787,11 +832,17 @@ const TOOLS=[
  {name:'get_fim_procedure',description:'Get the full Fault Isolation Manual procedure (probable causes in order, remedies, connector/LRU reference designators, tools, warnings) by procedure id from lookup_fault (format "36-10-00#7"). Long procedures are paged: pass offset from the previous response to continue.',
   input_schema:{type:'object',properties:{proc_id:{type:'string'},offset:{type:'integer',description:'Character offset to continue a long procedure'}},required:['proc_id']}},
  {name:'search_manuals',description:'Keyword (BM25) search over page text of AMM, FIM, IPC, WDM, TPG and FSI training manual, by ATA chapter. Returns ranked page snippets with doc_id, pdf_page and a citation string. Use specific technical terms, component names, reference designators (e.g. 171A7P1), CAS wording, or ATA numbers. Specify ata_chapters whenever you know the system — results are far better. Run several focused searches rather than one vague one.',
-  input_schema:{type:'object',properties:{query:{type:'string'},ata_chapters:{type:'array',items:{type:'string'},description:'Two-digit ATA chapters, e.g. ["21","36"]. "tpg" = TPG CAS/message chapters. Omit to auto-select.'},manuals:{type:'array',items:{type:'string',enum:['AMM','FIM','IPC','WDM','TPG','FSI']},description:'Restrict to these manuals'},max_results:{type:'integer',description:'Default 8, max 15'}},required:['query']}},
+  input_schema:{type:'object',properties:{query:{type:'string'},ata_chapters:{type:'array',items:{type:'string'},description:'Two-digit ATA chapters, e.g. ["21","36"]. "tpg" = TPG CAS/message chapters. Omit to auto-select.'},manuals:{type:'array',items:{type:'string',enum:['AMM','FIM','IPC','WDM','TPG','FSI','MMEL','MOPP']},description:'Restrict to these manuals'},max_results:{type:'integer',description:'Default 8, max 15'}},required:['query']}},
  {name:'read_pages',description:'Read the full text of one or more consecutive pages of a document (doc_id from search/list results). Use to get complete steps, limits, tolerances, tables, wire lists or system logic around a search hit. Max 4 pages per call.',
   input_schema:{type:'object',properties:{doc_id:{type:'integer'},pdf_page:{type:'integer'},count:{type:'integer',description:'Pages to read, default 1, max 4'}},required:['doc_id','pdf_page']}},
  {name:'list_documents',description:'List documents in the library catalog filtered by ATA prefix (e.g. "21-31" or "36"), manual and/or title words. Use to find the right AMM task (System Description, Adjustment/Test, Removal/Installation), WDM schematic/wire list, IPC figure or FSI chapter for a system.',
-  input_schema:{type:'object',properties:{ata_prefix:{type:'string'},manual:{type:'string',enum:['AMM','FIM','IPC','WDM','TPG','FSI']},title_contains:{type:'string'}}}}
+  input_schema:{type:'object',properties:{ata_prefix:{type:'string'},manual:{type:'string',enum:['AMM','FIM','IPC','WDM','TPG','FSI','MMEL','MOPP']},title_contains:{type:'string'}}}},
+ {name:'lookup_mel',description:'Look up MEL dispatch relief for an inoperative item or a CAS message in the Gulfstream G-V / GV-SP (G550) / GIV-X MMEL (Rev 11) with the Gulfstream MOPP (items marked GV / GV-SP / GIV-X apply only to that model; this aircraft is a GV-SP). Returns for each relief option: repair category, number installed / required for dispatch, the MMEL remarks or exceptions (conditions), the (M) maintenance procedure, (O) operational procedure and placard, the repair interval and the dispatch authority under the operating rule set in the app, with MMEL / MOPP citations. Use it when the technician asks whether the aircraft can be dispatched, or when your conclusion leaves an item inoperative.',
+  input_schema:{type:'object',properties:{query:{type:'string',description:'Item or CAS message words, or MMEL item number, e.g. "pack inlet valve", "yaw damper", "ACS FAIL", "21-14"'}},required:['query']}},
+ {name:'record_mel_deferral',description:'Record that an MEL deferral is verified as necessary for this case, so the app fills the MEL deferral section of the operator paperwork (the Solairus AMDL when that operating rule is set) and offers it to the technician. Call it only when (1) the fault will not be corrected before the next flight (the technician said so, or asked to defer), (2) lookup_mel found relief for the actual failed item under the operating rule, and (3) you have picked the relief option whose conditions match this aircraft. Never call it as a suggestion or for an item without relief.',
+  input_schema:{type:'object',properties:{mel_id:{type:'string',description:'mel_id from lookup_mel'},option:{type:'integer',description:'option number of the chosen relief row from lookup_mel'},discrepancy:{type:'string',description:'Discrepancy entry for the log: what failed and how it showed (CAS message, symptom), one or two sentences, technician wording style'},verification:{type:'string',description:'Why deferral is necessary and which relief conditions were confirmed or still must be completed before dispatch'}},required:['mel_id','option','discrepancy','verification']}},
+ {name:'record_corrective_action',description:'Record the corrective / clearing action for this case once the technician reports the fix is complete (e.g. part replaced and operational test passed), so the app fills the Corrective Action, MX Performed and PN/SN off/on fields of the discrepancy log (Solairus AMDL) and marks any recorded MEL deferral as cleared. Use the technician\'s facts only: never invent part or serial numbers. Cite the AMM removal/installation and operational test / functional check task numbers you actually found.',
+  input_schema:{type:'object',properties:{corrective_action:{type:'string',description:'Log-style corrective action, e.g. "Removed and replaced L pack inlet valve IAW AMM 21-21-01. Ops check IAW AMM 21-21-01 good. MEL 21-14 deferral cleared." Keep under ~350 characters.'},mx_performed:{type:'string',description:'Short MX performed line, e.g. "R&R L pack inlet valve, ops check good"'},pn_off:{type:'string'},sn_off:{type:'string'},pn_on:{type:'string'},sn_on:{type:'string'}},required:['corrective_action']}}
 ];
 async function runTool(name,input){
   try{
@@ -807,6 +858,37 @@ async function runTool(name,input){
       const d=DATA.catalog[p.doc];
       registerSource({cite:`FIM ${p.ata} p${p.pages?p.pages[0]:'?'}`,doc_id:p.doc,pdf_page:p.pdfPage});
       return {summary:`FIM ${p.ata}${p.pages?' p'+p.pages[0]+(p.pages[1]!==p.pages[0]?'–'+p.pages[1]:''):''}`,data:{proc:p.id,fault_code:p.code,kind:p.kind,title:p.title,ata:p.ata,fim_pages:p.pages,doc_id:p.doc,pdf_page_start:p.pdfPage,revision:d.rev,cite:`FIM ${p.ata} p${p.pages?p.pages[0]:''}`,text:txt,continues:off+LIM<p.text.length?{next_offset:off+LIM,total_chars:p.text.length}:false}};
+    }
+    if(name==='lookup_mel'){
+      await loadMel();const ops=melOps();const disc=new Date();
+      const r=searchMel(input.query||'',6);
+      const out=r.map(g=>({mel_id:melId(g),item:melTitle(g),reference:melRef(g),optional_item:g.opt||undefined,color:g.color||undefined,
+        mmel_cite:g.mmel?melCiteStr('mmel',g.mmel):undefined,
+        relief:g.rel.map((x,oi)=>[x,oi]).filter(([x])=>melAuthOk(x,ops)).map(([x,oi])=>{const iv=melInterval(x,ops,disc);return {option:oi,category:x.cat,installed:x.inst,required_for_dispatch:x.req,applies_to:x.qual||x.note||undefined,authority_tag:x.auth||undefined,
+          mopp_differs:x.moppv?`MOPP shows ${x.moppv}; MMEL values given`:undefined,conditions:x.rem||x.lim,maintenance_M:x.m,operational_O:x.o,placard:x.p,repair_interval:iv.line,mopp_cite:(x.mopp||[]).map(p=>melCiteStr('mopp',p)).join(', ')}})}));
+      return {summary:`${r.length} MEL item${r.length===1?'':'s'}`,data:{operating_rule:ops.label,dispatch_authority:ops.basis+' '+ops.preamble,
+        pic:'PIC determines the aircraft is in condition for safe flight (14 CFR 91.7).',no_mel_note:ops.none?'No MEL authorization: 14 CFR 91.213(d) is not available for this turbine airplane; repair before flight or obtain a special flight permit (14 CFR 21.197).':undefined,
+        matches:out,note:r.length?'Dispatch must follow the operator\'s own approved MEL, which may be more restrictive than the MMEL.':'No MMEL relief found for those words. If the item is truly not listed in the MMEL, it must be operative for dispatch.'}};
+    }
+    if(name==='record_corrective_action'){
+      if(!CASE)return {summary:'no case',error:true,data:{error:'No open case.'}};
+      const c={};for(const k of ['corrective_action','mx_performed','pn_off','sn_off','pn_on','sn_on'])if(input[k])c[k]=String(input[k]).trim();
+      c.at=Date.now();CASE.clearing=c;saveCase();
+      return {summary:'corrective action recorded',data:{recorded:true,cleared_deferral:!!CASE.deferral,
+        paperwork:melOps().amdl?'The Corrective Action, MX Performed and PN/SN fields of the Solairus AMDL are filled; the technician taps Create Completed AMDL, checks it and signs.':'Corrective action saved with the case.',
+        reminder:'Remind the technician to sign the corrective action / return to service and remove the placard.'}};
+    }
+    if(name==='record_mel_deferral'){
+      await loadMel();const ops=melOps();
+      if(ops.none)return {summary:'no MEL authorization',error:true,data:{error:'The operating rule is set to "No MEL authorization": nothing can be deferred. Repair before flight or obtain a special flight permit (14 CFR 21.197).'}};
+      const g=melById(input.mel_id),r=g&&g.rel[input.option|0];
+      if(!g||!r)return {summary:'not found',error:true,data:{error:'Unknown mel_id / option. Call lookup_mel and use its mel_id and option values.'}};
+      if(!melAuthOk(r,ops))return {summary:'wrong authority',error:true,data:{error:'That relief option is not valid under the operating rule ('+ops.label+').'}};
+      const disc=CASE&&CASE.created?new Date(CASE.created):new Date();const iv=melInterval(r,ops,disc);
+      CASE.deferral={mel_id:input.mel_id,option:input.option|0,ata:g.kind==='item'?g.ata:'',disc:String(input.discrepancy||''),verification:String(input.verification||''),at:Date.now()};saveCase();
+      return {summary:`${melTitle(g).slice(0,40)} · Cat ${r.cat}`,data:{recorded:true,item:melTitle(g),category:r.cat,repair_interval:iv.line,repair_by:iv.due?fmtDate(iv.due):undefined,
+        paperwork:ops.amdl?'Solairus AMDL MEL section is filled and offered to the technician (Create Solairus AMDL).':'Deferral sheet is offered to the technician (Create Deferral PDF).',
+        reminder:'Tell the technician the deferral is ready to sign, and list the (M) steps, (O) briefing and placard still to complete.'}};
     }
     if(name==='search_manuals'){
       const max=Math.min(15,Math.max(1,input.max_results|0||8));
@@ -830,6 +912,7 @@ async function runTool(name,input){
     throw new Error('Unknown tool '+name);
   }catch(e){return {summary:'error',error:true,data:{error:String(e.message||e)}}}
 }
+function melCiteStr(k,pr){const c=`${k.toUpperCase()} ${pr[1]||'p'+pr[0]}`;registerSource({cite:c,doc_id:MEL[k].doc_id,pdf_page:pr[0]});return c}
 const SOURCES=new Map();
 function normCite(c){return String(c).toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim()}
 function registerSource(x){if(x&&x.cite&&x.doc_id!=null){SOURCES.set(normCite(x.cite),{doc_id:x.doc_id,pdf_page:x.pdf_page});}}
@@ -847,6 +930,7 @@ Aircraft: ${m.aircraft||'Gulfstream G550'}.
 - IPC ${rev.IPC||''}: part numbers and effectivity.
 - TPG ${rev.TPG||''}: technician's pocket guide; CAS messages with probable causes; quick system overviews. AMM governs on conflict.
 - FSI G500/G550 Maintenance Training Manual: system theory, logic, block diagrams in prose. Training only.
+- MMEL (${rev.MMEL||''}) and Gulfstream MOPP (${rev.MOPP||''}): dispatch relief with inoperative items (Section 1 items, Section 2 CAS messages), repair categories, and the (M) maintenance, (O) operational and placarding procedures. Use lookup_mel. The MMEL covers the G-V, GV-SP (G550) and GIV-X: use only relief that applies to the GV-SP. The operator's own approved MEL governs.
 Known gaps: ${(m.gaps||[]).join(' | ')}
 
 # How to work
@@ -857,6 +941,7 @@ Known gaps: ${(m.gaps||[]).join(' | ')}
 5. Recommend the single most discriminating next check — the test that best separates the top hypotheses, with the least effort and risk — with exact steps, connector/pin/wire identifiers from FIM/WDM, expected values and pass/fail interpretation. Follow FIM order unless the evidence justifies deviating; when you deviate, say why.
 6. When the technician reports results, update the differential explicitly ("this eliminates X because…") and continue until you can state a conclusion: what failed, why it produced these symptoms, the corrective action (AMM task), and the required ops/functional check after repair.
 7. Use WDM for wiring (designators like 171A7P1, wire numbers, splices, ground studs, circuit breakers) and IPC for part numbers when replacement is likely.
+8. Dispatch: when the technician asks about deferring, or the fault cannot be fixed before the next flight, call lookup_mel. State the relief (category, installed / required, every condition), who authorizes it under the operating rule the tool returns (MEL + LOA/OpSpec, PIC acceptance), the repair-by interval, and split the procedures by role: (M) for maintenance, (O) for the flight crew, placard for maintenance. If there is no relief, say the item must be repaired before flight. When deferral is verified as necessary (the fault won't be fixed before the next flight and the chosen relief's conditions fit this aircraft), call record_mel_deferral with the mel_id and option from lookup_mel and a log-style discrepancy entry; the app then fills the MEL section of the operator's discrepancy log (Solairus AMDL) for signature. Do not record a deferral the technician hasn't chosen. When the technician later reports the fix is complete (part replaced, adjustment made, operational test / functional check passed), call record_corrective_action with a log-style corrective action that cites the AMM removal/installation and operational test tasks you found, and the P/N and S/N off/on exactly as the technician gave them (ask for any that are missing rather than guessing).
 Do not stop at one search: search, read the relevant pages, cross-check between manuals. Keep tool calls purposeful (typically 3–10 per turn).
 
 # Rules
@@ -1003,7 +1088,7 @@ function md(src){
   }
   closeLists();return html;
 }
-const TOOL_LABEL={lookup_fault:i=>`Fault index: “${i.query||''}”`,get_fim_procedure:i=>`FIM procedure ${i.proc_id||''}${i.offset?' (cont.)':''}`,search_manuals:i=>`Search ${(i.manuals||[]).join('/')||'all'}${i.ata_chapters?' ch '+i.ata_chapters.join(','):''}: “${i.query||''}”`,read_pages:i=>`Read doc ${i.doc_id} p${i.pdf_page}${i.count>1?'+'+(i.count-1):''}`,list_documents:i=>`List docs ${[i.manual,i.ata_prefix,i.title_contains].filter(Boolean).join(' · ')}`};
+const TOOL_LABEL={record_corrective_action:i=>'Corrective action recorded',record_mel_deferral:i=>'MEL deferral recorded',lookup_mel:i=>`MEL: “${i.query||''}”`,lookup_fault:i=>`Fault index: “${i.query||''}”`,get_fim_procedure:i=>`FIM procedure ${i.proc_id||''}${i.offset?' (cont.)':''}`,search_manuals:i=>`Search ${(i.manuals||[]).join('/')||'all'}${i.ata_chapters?' ch '+i.ata_chapters.join(','):''}: “${i.query||''}”`,read_pages:i=>`Read doc ${i.doc_id} p${i.pdf_page}${i.count>1?'+'+(i.count-1):''}`,list_documents:i=>`List docs ${[i.manual,i.ata_prefix,i.title_contains].filter(Boolean).join(' · ')}`};
 function toolLabel(b){const f=TOOL_LABEL[b.name];return f?f(b.input||{}):b.name}
 function toolEl(b,result){
   const el=document.createElement('div');el.className='tool'+(result?(result.error?' err':''):' run');el.dataset.id=b.id;
@@ -1030,7 +1115,8 @@ function newAiBubble(){
       thinking(b){els[b._k].textContent=b.thinking},
       toolready(b){const t=els['tool:'+b.id];if(t)t.querySelector('.tx').textContent=toolLabel(b)}
     }},
-    toolDone(id,r){const t=els['tool:'+id];if(!t)return;t.classList.remove('run');if(r.error)t.classList.add('err');t.querySelector('.ic').textContent=r.error?'✖':'◆';t.querySelector('.rs').textContent=r.summary||'';t._result=r.data},
+    toolDone(id,r){const t=els['tool:'+id];if(!t)return;t.classList.remove('run');if(r.error)t.classList.add('err');t.querySelector('.ic').textContent=r.error?'✖':'◆';t.querySelector('.rs').textContent=r.summary||'';t._result=r.data;
+      if(!r.error&&r.data&&r.data.recorded){const c=deferralCard();if(c){$$('#chatLog .deferralcard').forEach(x=>x.remove());t.after(c)}}},
     resetPending(){},
     finish(u){typing.remove();flush();const d=document.createElement('div');d.className='usage';d.textContent=`case tokens · in ${fmtK(u.in)} · out ${fmtK(u.out)} · ${cfg.model}`;wrap.appendChild(d);autoScroll()},
     error(msg){typing.remove();flush();const d=document.createElement('div');d.className='errbox';d.textContent=msg;wrap.appendChild(d);autoScroll()}
@@ -1060,12 +1146,14 @@ function renderCase(){
       for(const b of m.content){
         if(b.type==='text'&&b.text){const d=document.createElement('div');d.className='aitext';d.innerHTML=md(b.text);aiWrap.appendChild(d)}
         else if(b.type==='thinking'&&b.thinking){const d=document.createElement('details');d.className='think';d.innerHTML='<summary>◈ REASONING</summary><div></div>';d.querySelector('div').textContent=b.thinking;aiWrap.appendChild(d)}
-        else if(b.type==='tool_use'){aiWrap.appendChild(toolEl(b,toolResults.get(b.id)||{summary:'',data:{}}))}
+        else if(b.type==='tool_use'){const tr=toolResults.get(b.id)||{summary:'',data:{}};aiWrap.appendChild(toolEl(b,tr));
+          if((b.name==='record_mel_deferral'||b.name==='record_corrective_action')&&!tr.error&&tr.data&&tr.data.recorded){const ph=document.createElement('div');ph.className='deferralslot';aiWrap.appendChild(ph)}}
       }
     }
   }
   $('#caseTitle').textContent=CASE.title?' · '+CASE.title:'';
   syncSessName();
+  {const slots=$$('#chatLog .deferralslot');if(slots.length&&(CASE.deferral||CASE.clearing))loadMel().then(()=>{const c=deferralCard();if(c)slots[slots.length-1].replaceWith(c)}).catch(()=>{})}
   renderFollowChips();
   requestAnimationFrame(()=>{stickBottom=true;autoScroll()});
 }
@@ -1116,7 +1204,7 @@ document.addEventListener('click',async e=>{
 });
 
 /* ═════════════════ MODAL ═════════════════ */
-const TITLE_KEEP=new Set(['AMDL','MEL','PDF','CMC','CAS','AMM','SDM','FSI','FIM','TPG','WDM','IPC','SWPM','ERC','MMEL','MOPP','IWDM','ATA','API','AI','G600','G550','PN','SN','LRU','CB','SSPC']);
+const TITLE_KEEP=new Set(['AMDL','MEL','PDF','CMC','CAS','AMM','SDM','FSI','FIM','TPG','WDM','IPC','SWPM','ERC','MMEL','MOPP','IWDM','ATA','API','AI','G600','G550','G650','G700','G800','PN','SN','LRU','CB','SSPC']);
 function niceTitle(t){t=String(t||'');if(!/^[A-Z][A-Z &/·\-]*$/.test(t))return t;return t.split(' ').map(w=>TITLE_KEEP.has(w)?(w==='IWDM'?'iWDM':w):w.charAt(0)+w.slice(1).toLowerCase()).join(' ')}
 function showModal(title,html){$('#modalTitle').textContent=niceTitle(title);$('#modalBody').innerHTML=html;$('#modal').classList.remove('hidden');$('#modalBody').scrollTop=0}
 function hideModal(){$('#modal').classList.add('hidden')}
@@ -1268,7 +1356,8 @@ let curTab='describe';
 
 $$('.tab').forEach(t=>t.onclick=()=>{
   curTab=t.dataset.tab;$$('.tab').forEach(x=>x.classList.toggle('on',x===t));
-  $('#caseForm').classList.toggle('hidden',curTab==='search');$('#searchPane').classList.toggle('hidden',curTab!=='search');
+  $('#caseForm').classList.toggle('hidden',curTab==='search'||curTab==='mel');$('#searchPane').classList.toggle('hidden',curTab!=='search');$('#melPane').classList.toggle('hidden',curTab!=='mel');
+  if(curTab==='mel')initMelPane();
   const ord={describe:['#faultCard','#cmcCard','#describeCard']}[curTab];
   if(ord){const order=ord;const cf=$('#caseForm');for(const id of order.slice().reverse())cf.prepend($(id))}
   if(curTab==='fault')$('#faultInput').focus();
@@ -1514,7 +1603,9 @@ $('#btnExport').onclick=()=>{
     <div class="hint" id="exTimes" style="margin:-4px 0 12px">${esc(timesLine(f)||'No aircraft / engine times entered for this case.')}</div>
     <button class="btn" id="exPdf">Create PDF</button>
     <div id="exOut" style="margin-top:12px"></div>
-    <button class="btn2" id="exMd" style="width:100%;margin-top:12px">Download Markdown (.md)</button>`);
+    <button class="btn2" id="exMd" style="width:100%;margin-top:12px">Download Markdown (.md)</button>
+    ${(MEL_OPS[cfg.melOps]||{}).amdl?`<button class="btn2" id="exAmdl" style="width:100%;margin-top:12px">Solairus AMDL (${CASE.clearing?'Completed':CASE.deferral?'MEL Deferral':'Discrepancy'})</button>`:''}`);
+  if($('#exAmdl'))$('#exAmdl').onclick=async()=>{sync();if(CASE.deferral)try{await loadMel()}catch(e){}openCaseAmdl()};
   const sync=()=>{f.reg=$('#exReg').value.trim().toUpperCase();f.sn=$('#exSn').value.trim();if(f.reg||f.sn)store.set(LAST_AC_KEY,{reg:f.reg,sn:f.sn});saveCase()};
   $('#exMd').onclick=()=>{sync();exportMarkdown()};
   $('#exPdf').onclick=async()=>{
@@ -1596,8 +1687,8 @@ const ACR=new Set(['AC','DC','APU','CAS','CMC','EER','FMS','GPS','IRS','ADS','RA
 const tc=s=>String(s).toLowerCase().replace(/[a-z0-9]+(?:'[a-z]+)?/g,w=>ACR.has(w.toUpperCase())?w.toUpperCase():w.charAt(0).toUpperCase()+w.slice(1));
 function fillChapterSelect(){
   const names={};for(const d of DATA.catalog)if(d.m==='AMM'&&d.ata&&/-00-00$/.test(d.ata)&&d.type==='System Description')names[d.ata.slice(0,2)]=names[d.ata.slice(0,2)]||tc(d.title.split('—')[0].trim());
-  $('#sChap').innerHTML='<option value="">Auto (Best Match)</option>'+Object.keys(DATA.manifest.shards).sort().map(k=>`<option value="${k}">${k==='tpg'?'TPG — Messages, Dimensions, Torques':k==='gen'?'General / Indexes':'ATA '+k+(names[k]?' — '+esc(names[k]):'')}</option>`).join('');
-  $('#sManuals').innerHTML=['AMM','FIM','WDM','IPC','TPG','FSI'].map(m=>`<label><input type="checkbox" value="${m}" checked> ${m}</label>`).join('');
+  $('#sChap').innerHTML='<option value="">Auto (Best Match)</option>'+Object.keys(DATA.manifest.shards).sort().map(k=>`<option value="${k}">${k==='tpg'?'TPG — Messages, Dimensions, Torques':k==='gen'?'General / Indexes':k==='mel'?'MMEL / MOPP (Dispatch Relief)':'ATA '+k+(names[k]?' — '+esc(names[k]):'')}</option>`).join('');
+  $('#sManuals').innerHTML=['AMM','FIM','WDM','IPC','TPG','FSI','MMEL','MOPP'].map(m=>`<label><input type="checkbox" value="${m}" checked> ${m}</label>`).join('');
 }
 async function doSearch(){
   const q=$('#sQuery').value.trim();if(!q||!DATA.ready)return;
@@ -1630,6 +1721,447 @@ $('#sGo').onclick=doSearch;$('#sQuery').addEventListener('keydown',e=>{if(e.key=
   // Stop rubber-banding the whole page when a scroll area is at its top/bottom
   document.addEventListener('touchmove',e=>{if(e.touches.length===1&&!e.target.closest('main,.sheetbd,.aclist,.pagetext,.tooldetail,#composer .qchips,.aitext table,details.think div,textarea'))e.preventDefault()},{passive:false});
 })();
+
+/* ═════════════════ MEL DISPATCH RELIEF (MMEL + MOPP) ═════════════════ */
+if(typeof normMsg==='undefined')var normMsg=s=>String(s).toUpperCase().replace(/[^A-Z0-9]+/g,' ').trim();
+// Operating rule -> who authorizes dispatch with inoperative equipment, and how repair intervals / extensions apply.
+const MEL_OPS={
+  '91-d195':{label:'Part 91 — MEL with LOA D195',fam:'faa',p91:true,
+    basis:'Operator MEL approved by the FAA Flight Standards office and authorized by Letter of Authorization (LOA) D195. The MEL and LOA must be on board (14 CFR 91.213(a)).',
+    preamble:'Preamble: FAA MMEL Policy Letter PL-36 (Part 91 MEL approval and preamble).'},
+  '91-d095':{label:'Part 91 — MMEL as MEL, LOA D095',fam:'faa',p91:true,
+    basis:'MMEL used as the MEL with the operator\'s procedures document, authorized by LOA D095. The MMEL, procedures document and LOA must be on board (14 CFR 91.213(a)).',
+    preamble:'Preamble: FAA MMEL Policy Letter PL-36 (Part 91 MEL approval and preamble).'},
+  '91k':{label:'Part 91K — MSpec D095',fam:'faa',
+    basis:'Program manager\'s FAA-approved MEL, authorized by Management Specification (MSpec) D095 (14 CFR 91.213(c)).',
+    preamble:'Preamble: FAA MMEL Policy Letter PL-34 (MMEL and MEL preamble).'},
+  '135':{label:'Part 135 — OpSpec D095',fam:'faa',
+    basis:'Certificate holder\'s FAA-approved MEL, authorized by Operations Specification (OpSpec) D095 (14 CFR 91.213(c), 135.179).',
+    preamble:'Preamble: FAA MMEL Policy Letter PL-34 (MMEL and MEL preamble).'},
+  '135-solairus':{label:'Part 135 — Solairus Aviation (OpSpec D095)',fam:'faa',amdl:true,
+    basis:'Solairus Aviation\'s FAA-approved MEL, authorized by Operations Specification (OpSpec) D095 (14 CFR 91.213(c), 135.179). Record the discrepancy and the deferral on the Solairus AMDL (Form 502.1).',
+    preamble:'Preamble: FAA MMEL Policy Letter PL-34 (MMEL and MEL preamble).'},
+  '125':{label:'Part 125 — OpSpec D095',fam:'faa',
+    basis:'Operator\'s FAA-approved MEL, authorized by Operations Specification D095 (or the LODA issued to a Part 125 deviation holder) (14 CFR 91.213(c)).',
+    preamble:'Preamble: FAA MMEL Policy Letter PL-34 (MMEL and MEL preamble).'},
+  'easa':{label:'EASA operator — approved MEL',fam:'easa',
+    basis:'Operator MEL approved by the competent authority of the State of the Operator (EASA Air OPS, ORO.MLR.105), built from this MMEL with the <FAA>-only relief removed.',
+    preamble:'Preamble: CS-MMEL Book, subpart B, GM5 MMEL.120 (model preamble).'},
+  'none':{label:'No MEL authorization',fam:'faa',none:true,
+    basis:'No MEL / LOA / OpSpec in force for this aircraft.',
+    preamble:''}
+};
+const REPAIR_DAYS={B:3,C:10,D:120};
+let MEL=null,melIdx=-1,melItems=[],melSel=null;
+async function loadMel(){
+  if(MEL)return MEL;
+  if(!DATA.ready)throw new Error('Manual data is not loaded. Check Settings.');
+  if(!DATA.manifest.mel)throw new Error('The MMEL / MOPP are not in this data repo yet.');
+  MEL=await fetchData('mel.json.gz');
+  for(const g of MEL.items){g.kind='item';g.hay=normMsg(`${g.k} ${g.sys} ${g.item} ${g.sub} ${g.rel.map(r=>r.note).join(' ')}`)}
+  for(const g of MEL.cas){g.kind='cas';g.hay=normMsg(`${g.name} ${g.rel.map(r=>r.qual).join(' ')} CAS`)}
+  return MEL;
+}
+function melOps(){return MEL_OPS[cfg.melOps]||MEL_OPS['91-d195']}
+function melAuthOk(r,ops){ops=ops||melOps();if(!r.auth)return true;return ops.fam==='easa'?/EASA/.test(r.auth):/FAA/.test(r.auth)}
+function searchMel(q,max=14){
+  if(!MEL)return [];
+  const Q=normMsg(q);const terms=Q.split(' ').filter(Boolean);if(!terms.length)return [];
+  const ata=String(q).trim().match(/^(\d{2})(?:[-\s.]?(\d{1,2}))?/);
+  const sc=[];
+  for(const g of [...MEL.items,...MEL.cas]){
+    const key=g.kind==='item'?g.k.split('-').slice(0,2).join('-'):'';
+    const ataHit=ata&&g.kind==='item'&&(ata[2]?key===`${ata[1]}-${+ata[2]}`:g.ata===ata[1]);
+    if(!ataHit&&!terms.every(t=>g.hay.includes(t)))continue;
+    const name=normMsg(g.kind==='item'?`${g.item} ${g.sub}`:g.name);
+    let s=0;if(name===Q)s+=100;if(name.startsWith(Q))s+=30;if(ataHit)s+=40;
+    s+=terms.filter(t=>(' '+name+' ').includes(' '+t+' ')).length*6;if(g.kind==='cas'&&/CAS|FAIL|FAULT|DGRD|MAINT/.test(Q))s+=4;
+    s-=name.length/60;sc.push([s,g]);
+  }
+  return sc.sort((a,b)=>b[0]-a[0]).slice(0,max).map(x=>x[1]);
+}
+function melId(g){return (g.kind==='cas'?'C':'I')+(g.kind==='cas'?MEL.cas:MEL.items).indexOf(g)}
+function melById(id){const m=String(id||'').match(/^([CI])(\d+)$/);if(!m||!MEL)return null;return (m[1]==='C'?MEL.cas:MEL.items)[+m[2]]||null}
+function deferralCard(){
+  if(!CASE||!MEL)return null;const d=CASE.deferral,c=CASE.clearing;const ops=melOps();
+  const g=d&&melById(d.mel_id),r=g&&g.rel[d.option];
+  if(!(g&&r)&&!(c&&ops.amdl))return null;
+  const el=document.createElement('div');el.className='card melcard deferralcard'+(c?' cleared':'');
+  let h='';
+  if(c)h+=`<div class="melopt"><span class="melcat catD">${g&&r?'CLEARED':'CORRECTED'}</span><span class="melnum">${g&&r?'MEL deferral cleared':'Corrective action recorded'}</span></div>`;
+  else h+=`<div class="melopt"><span class="melcat cat${esc(r.cat)}">CAT ${esc(r.cat)}</span><span class="melnum">MEL deferral verified</span></div>`;
+  if(g&&r)h+=`<div class="meltitle" style="font-size:15px;font-weight:800;margin-top:6px">${esc(melTitle(g))}${c?` · Cat ${esc(r.cat)}`:''}</div>`;
+  if(c){h+=`<div class="melint">${esc(c.corrective_action||'')}</div>`;
+    const parts=[c.pn_off&&'P/N off '+c.pn_off,c.sn_off&&'S/N off '+c.sn_off,c.pn_on&&'P/N on '+c.pn_on,c.sn_on&&'S/N on '+c.sn_on].filter(Boolean);
+    if(parts.length)h+=`<div class="hint">${esc(parts.join(' · '))}</div>`}
+  else{const iv=melInterval(r,ops,new Date(CASE.created||Date.now()));h+=`<div class="melint">${esc(iv.line)}${iv.due?`<br><b>Repair by end of ${esc(fmtDate(iv.due))}</b>`:''}</div>`}
+  if(CASE.amdl&&CASE.amdl.savedAt)h+=`<div class="hint">AMDL entries saved ${esc(dmyt(CASE.amdl.savedAt))}</div>`;
+  h+=`<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">${ops.amdl?`<button class="btn small dfAmdl">${c?'Create Completed AMDL':'Create Solairus AMDL'}</button>`:''}${g&&r?'<button class="btn2 small dfPdf">Deferral PDF</button><button class="btn2 small dfMel">Open in MEL Tab</button>':''}</div>`;
+  el.innerHTML=h;
+  const a=el.querySelector('.dfAmdl');if(a)a.onclick=()=>openCaseAmdl();
+  const pb=el.querySelector('.dfPdf');if(pb)pb.onclick=()=>melExport(g,r);
+  const mb=el.querySelector('.dfMel');if(mb)mb.onclick=async()=>{await showIntakeMel(g)};
+  return el;
+}
+function refreshCaseCard(){const old=$$('#chatLog .deferralcard');if(!old.length)return;const c=deferralCard();if(c)old[old.length-1].replaceWith(c)}
+function openCaseAmdl(){
+  const d=CASE&&CASE.deferral;const g=d&&melById(d.mel_id),r=g&&g.rel[d.option];
+  openAmdl({disc:(d&&d.disc)||caseDiscrepancy(),deferral:g&&r?{g,r}:null,discDate:CASE&&CASE.created?new Date(CASE.created):null,caseBound:true});
+}
+async function showIntakeMel(g){
+  if(typeof showIntake==='function')showIntake();
+  const t=document.querySelector('.tab[data-tab=mel]');if(t)t.click();await loadMel();$('#melInput').value=melTitle(g);renderMelItem(g);
+}
+function melTitle(g){return g.kind==='cas'?g.name:(g.item+(g.sub?' — '+g.sub:''))}
+function melRef(g){return g.kind==='cas'?'MMEL Section 2 · CAS message relief':`MMEL ${g.ata}-${g.seq}${g.sub?' · sub-item '+g.k.split('-').slice(2).join('-'):''} · ${tc(g.sys)}`}
+function addDays(d,n){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate()+n);return x}
+const fmtDate=d=>dmy(d);
+function parseDay(v){v=String(v||'').trim();let m=v.match(/^(\d{4})-(\d{2})-(\d{2})$/);if(m)return new Date(+m[1],m[2]-1,+m[3]);
+  m=v.match(/^(\d{1,2})\s*([A-Za-z]{3})[A-Za-z]*\.?\s*(\d{4})$/);if(m){const i=MONS.indexOf(m[2].toUpperCase());if(i>=0)return new Date(+m[3],i,+m[1])}
+  m=v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);if(m)return new Date(+m[3]<100?2000+ +m[3]:+m[3],m[1]-1,+m[2]);return new Date()}
+// repair interval for one relief row under the selected operating rule
+function melInterval(r,ops,disc){
+  const text=(r.rem||r.lim||'');
+  const a=text.match(/(?:repairs?|rectification)[^.]{0,40}?within\s+(\d+)\s+(consecutive\s+calendar[- ]days|calendar[- ]days|flight[- ]days|flight[- ]hours|days|hours)/i);
+  const aTxt=a?`within ${a[1]} ${a[2].replace(/-/g,' ').toLowerCase()} (stated in the Remarks)`:'';
+  if(ops.none)return {line:'No relief can be applied without an MEL authorization.',due:null};
+  if(r.cat==='A'){
+    let due=null;if(a&&/calendar/i.test(a[2]))due=addDays(disc,+a[1]);
+    return {line:a?`Category A: repair ${aTxt}${/flight/i.test(a[2])?' (flight-days count only days on which a flight is started)':''}.`:'Category A: repair interval as stated in the Remarks or Exceptions.',due,extend:false};
+  }
+  if(ops.p91)return {line:`Category ${r.cat}: Part 91 operators are not bound by Category B, C or D repair time limits. ${aTxt?'The Remarks also say: repair '+aTxt+'.':'Repair per your MEL and maintenance program.'}`,due:null,extend:false};
+  const n=REPAIR_DAYS[r.cat];if(!n)return {line:`Category ${r.cat}.`,due:null};
+  const due=addDays(disc,n);
+  return {line:`Category ${r.cat}: repair within ${n} consecutive calendar days, not counting the day of discovery.${aTxt?' Remarks also require repair '+aTxt+'.':''}`,due,extend:r.cat==='B'||r.cat==='C'};
+}
+function melProcs(r){
+  const t=(r.rem||r.lim||'');const head=t.slice(0,12);
+  return {M:/\(M\)/.test(head)||/^\(M\)\(O\)/.test(t),O:/\(O\)/.test(head)}
+}
+function melAuthorityHtml(g,ops){
+  const L=[];
+  L.push(`<div class="melrow"><b>Approval:</b> ${esc(ops.basis)}</div>`);
+  if(ops.preamble)L.push(`<div class="melrow">${esc(ops.preamble)} Base document: ${esc(MEL.mmel.title)}, Rev ${esc(MEL.mmel.rev)} (${esc(dmyStr(MEL.mmel.date))}). Your MEL may be more restrictive than the MMEL and always governs.</div>`);
+  if(ops.none){
+    L.push(`<div class="melrow melwarn"><b>No deferral possible.</b> The ${esc(APPNAME)} is a turbine-powered airplane with an MMEL, so 14 CFR 91.213(d) is not available. Without an MEL authorization the inoperative item must be repaired before flight, or the aircraft flown under a special flight permit (14 CFR 21.197) issued by the FAA.</div>`);
+    return L.join('');
+  }
+  L.push(`<div class="melrow"><b>Pilot in command:</b> decides whether the aircraft is in condition for safe flight (14 CFR 91.7) after reviewing the deferral, the placard and every (O) condition.${ops.fam==='faa'&&!ops.p91?' The flight release / dispatch follows your certificate holder\'s procedures.':''}</div>`);
+  L.push(`<div class="melrow"><b>Maintenance:</b> records the discrepancy and deferral (aircraft discrepancy log / maintenance record, with the day of discovery), performs the (M) procedure and installs the placard. (M) procedures are normally done by maintenance personnel; other people (e.g. trained flight crew) may do them only if your operator has qualified and authorized them. Procedures that need special knowledge or skill, tools or test equipment should be done by maintenance personnel (PL-25).</div>`);
+  if(ops.fam==='faa'&&!ops.p91)L.push(`<div class="melrow"><b>Extension:</b> a one-time repair interval extension is possible only for Category B or C items, and only if your D095 includes Continuing Authorization – Single Extension. Never for Category A or D.</div>`);
+  if(ops.fam==='easa')L.push(`<div class="melrow"><b>Extension:</b> only under a rectification interval extension procedure approved by your competent authority.</div>`);
+  return L.join('');
+}
+function melCite(docKey,pr){const doc=MEL[docKey];if(!pr)return '';const lab=Array.isArray(pr)?pr[1]:'';const pg=Array.isArray(pr)?pr[0]:pr;
+  const c=`${docKey.toUpperCase()} ${lab||'p'+pg}`;registerSource({cite:c,doc_id:doc.doc_id,pdf_page:pg});
+  return `<span class="cite" data-cite="${esc(c)}">${esc(c)}</span>`}
+function melText(t){
+  // keep list structure: "a) …", "• …", "NOTE …" on their own lines
+  return esc(t||'').replace(/\n/g,'<br>').replace(/\b(NOTE\s*\d*:)/g,'<b>$1</b>');
+}
+function melReliefHtml(g,r,i,ops,disc){
+  const iv=melInterval(r,ops,disc);const pr=melProcs(r);
+  const none=s=>!s||/^none required\.?$/i.test(s.trim());
+  const sec=(cls,title,who,body,req)=>`<div class="melsec ${cls}${none(body)?' dim':''}"><div class="melsh"><span>${title}</span><span class="melwho">${who}</span>${req?'<span class="melreq">REQUIRED</span>':''}</div><div class="melbody">${none(body)?'None required.':melText(body)}</div></div>`;
+  const er=/except for er operations/i.test(r.rem||r.lim||'');
+  const head=`<div class="melopt"><span class="melcat cat${esc(r.cat)}">CAT ${esc(r.cat)}</span>${r.inst!=null?`<span class="melnum">Installed ${esc(r.inst||'—')} · Required ${esc(r.req||'—')}</span>`:''}${r.auth?`<span class="melauth">&lt;${esc(r.auth)}&gt;</span>`:''}${r.qual?`<span class="melnum">${esc(r.qual)}</span>`:''}${r.note?`<span class="melnum">${esc(r.note)}</span>`:''}</div>`;
+  return `<div class="card melcard" data-i="${i}">
+    ${head}
+    ${r.moppv?`<div class="hint" style="margin-top:6px">Category / installed / required are from the MMEL Rev ${esc(MEL.mmel.rev)}. The MOPP shows ${esc(r.moppv)}; the MMEL governs.</div>`:''}
+    <div class="melint">${esc(iv.line)}${iv.due?`<br><b>Repair by end of ${esc(fmtDate(iv.due))}</b>`:''}</div>
+    ${er?'<div class="melrow melwarn" style="margin:8px 0 0">Not for ER operations (extended range: Part 135 flights with a single-engine cruise segment over 180 minutes; EASA ER as approved by the State of the Operator).</div>':''}
+    ${sec('cond','Conditions to Dispatch','MMEL Remarks or Exceptions',r.rem||r.lim,false)}
+    ${r.m!==undefined?sec('m','(M) Maintenance Procedure','For Maintenance',r.m,pr.M):''}
+    ${sec('o','(O) Operational Procedure','For Flight Crew',r.o,pr.O)}
+    ${r.p!==undefined?sec('p','Placarding Procedure','For Maintenance',r.p,true):''}
+    <div class="melcites">${melCite('mmel',g.mmel)} ${(r.mopp||[]).map(x=>melCite('mopp',x)).join(' ')}</div>
+    ${ops.amdl?`<button class="btn small melamdl" data-i="${i}">Create Solairus AMDL</button> `:''}<button class="btn2 small melpdf" data-i="${i}" ${ops.none?'disabled':''}>Create Deferral PDF</button>
+  </div>`;
+}
+function renderMelItem(g){
+  melSel=g;const ops=melOps();const disc=parseDay($('#melDate').value);
+  const rel=g.rel.map((r,i)=>[r,i]).filter(([r])=>melAuthOk(r,ops));
+  const hidden=g.rel.length-rel.length;
+  let h=`<div class="card melhead"><div class="melkind">${esc(melRef(g))}${g.opt?' · <span class="warnnote">optional item (***): only if installed</span>':''}</div>
+    <div class="meltitle">${g.kind==='cas'?`<span class="cdot ${esc((g.color||'').toLowerCase())}"></span>`:''}${esc(melTitle(g))}</div>
+    ${g.kind==='cas'&&g.color?`<div class="hint" style="margin-top:2px">${esc(g.color)} CAS message</div>`:''}</div>
+    <div class="card melauthbox"><h3>Dispatch Authority · ${esc(ops.label)}</h3>${melAuthorityHtml(g,ops)}</div>`;
+  if(!rel.length)h+=`<div class="card"><div class="melrow melwarn">No ${ops.fam==='easa'?'EASA':'FAA'} relief for this item under the selected operating rule${hidden?` (${hidden} relief option${hidden>1?'s are':' is'} for the other authority only)`:''}. The item must be operative for dispatch.</div></div>`;
+  else{
+    if(rel.length>1)h+=`<div class="hint" style="margin:-4px 2px 10px">${rel.length} relief options. Use the one whose conditions match the aircraft's actual configuration and failure.</div>`;
+    h+=rel.map(([r,i])=>melReliefHtml(g,r,i,ops,disc)).join('');
+  }
+  h+=`<div class="disclaimer">From the Gulfstream ${esc(MEL.model||'GVII-G500/G600')} MMEL Rev ${esc(MEL.mmel.rev)} and MOPP Rev ${esc(MEL.mopp.rev)} (${esc(dmyStr(MEL.mopp.date))}). Dispatch must follow the operator's own approved MEL and procedures, the AFM limitations, and the current revisions.</div>`;
+  $('#melResults').innerHTML=h;
+  $$('#melResults .melpdf').forEach(b=>b.onclick=()=>melExport(g,g.rel[+b.dataset.i]));
+  $$('#melResults .melamdl').forEach(b=>b.onclick=()=>{const r=g.rel[+b.dataset.i];openAmdl({disc:g.kind==='cas'?`${g.name}${g.color?' ('+g.color+')':''} CAS message posted.`:`${melTitle(g)}${r.note?' ('+r.note+')':''} inoperative.`,deferral:{g,r}})});
+}
+function renderMelAc(){
+  const q=$('#melInput').value.trim(),L=$('#melList');if(!q||!MEL){L.classList.add('hidden');return}
+  melItems=searchMel(q,14);
+  L.innerHTML=melItems.length?melItems.map((g,i)=>`<div class="acitem${i===melIdx?' sel':''}" data-i="${i}"><div class="acmsg">${esc(melTitle(g))}</div><div class="acmeta">${esc(g.kind==='cas'?`CAS message${g.color?' · '+g.color:''} · Section 2`:`MMEL ${g.ata}-${g.seq} · ${tc(g.sys)}`)} · Cat ${esc([...new Set(g.rel.map(r=>r.cat))].join('/'))}</div></div>`).join('')
+    :`<div class="acitem" data-none="1"><div class="acmeta">Not found in the MMEL. Try other words (system, component, CAS message) or the ATA number, e.g. 21-4.</div></div>`;
+  L.classList.remove('hidden');
+  $$('#melList .acitem').forEach(el=>el.onmousedown=e=>{e.preventDefault();if(el.dataset.none)return;pickMel(melItems[+el.dataset.i])});
+}
+function pickMel(g){if(!g)return;$('#melInput').value=melTitle(g);melIdx=-1;$('#melList').classList.add('hidden');$('#melInput').blur();renderMelItem(g)}
+async function initMelPane(){
+  const sel=$('#melOps');if(!sel.options.length)sel.innerHTML=Object.entries(MEL_OPS).map(([k,v])=>`<option value="${k}" ${k===(cfg.melOps||'91-d195')?'selected':''}>${esc(v.label)}</option>`).join('');
+  if(!$('#melDate').value)$('#melDate').value=dmy(new Date());
+  melAmdlBtn();
+  try{await loadMel();$('#melStatus').textContent=`MMEL Rev ${MEL.mmel.rev} (${dmyStr(MEL.mmel.date)}) · MOPP Rev ${MEL.mopp.rev} · ${MEL.items.length} items · ${MEL.cas.length} CAS messages`}
+  catch(e){$('#melStatus').innerHTML=`<span class="warnnote">${esc(e.message||e)}</span>`}
+}
+$('#melInput').addEventListener('input',()=>{melIdx=-1;renderMelAc()});
+$('#melInput').addEventListener('focus',()=>{if($('#melInput').value.trim())renderMelAc()});
+$('#melInput').addEventListener('blur',()=>setTimeout(()=>$('#melList').classList.add('hidden'),150));
+$('#melInput').addEventListener('keydown',e=>{
+  if(e.key==='ArrowDown'){melIdx=Math.min(melItems.length-1,melIdx+1);renderMelAc();e.preventDefault()}
+  else if(e.key==='ArrowUp'){melIdx=Math.max(0,melIdx-1);renderMelAc();e.preventDefault()}
+  else if(e.key==='Enter'){e.preventDefault();pickMel(melItems[melIdx>=0?melIdx:0])}
+});
+function melAmdlBtn(){const b=$('#melAmdlBlank');if(b)b.classList.toggle('hidden',!melOps().amdl)}
+$('#melOps').onchange=e=>{cfg.melOps=e.target.value;saveCfg();melAmdlBtn();if(melSel)renderMelItem(melSel)};
+$('#melAmdlBlank').onclick=()=>openAmdl({disc:caseDiscrepancy()});
+$('#melDate').onchange=()=>{const d=parseDay($('#melDate').value);$('#melDate').value=dmy(d);if(melSel)renderMelItem(melSel)};
+$('#melDatePick').onchange=e=>{if(!e.target.value)return;$('#melDate').value=dmy(parseDay(e.target.value));if(melSel)renderMelItem(melSel)};
+$('#melDatePick').onclick=e=>{try{e.target.showPicker()}catch(_){}};
+
+/* ── MEL deferral PDF ── */
+async function buildMelPdf(meta,g,r){
+  const {fonts}=await pdfReady();
+  const {jsPDF}=window.jspdf;const doc=new jsPDF({unit:'pt',format:'letter'});
+  let SANS='helvetica';
+  if(fonts){doc.addFileToVFS('Lato-Regular.ttf',fonts[0]);doc.addFont('Lato-Regular.ttf','Lato','normal');doc.addFileToVFS('Lato-Bold.ttf',fonts[1]);doc.addFont('Lato-Bold.ttf','Lato','bold');SANS='Lato'}
+  const W=doc.internal.pageSize.getWidth(),H=doc.internal.pageSize.getHeight(),M=48,CW=W-2*M;
+  const C={ink:[21,33,44],dim:[90,104,118],amber:[163,95,0],teal:[0,104,122],red:[196,35,31],rule:[200,210,220],fill:[240,244,247]};
+  const hdrH=meta.times?62:48;let y=0;
+  const font=(st='normal',sz=10,col=C.ink)=>{doc.setFont(SANS,st);doc.setFontSize(sz);doc.setTextColor(...col)};
+  function header(){
+    font('bold',9,C.amber);doc.text(pclean(`${APPNAME} MEL DEFERRAL`),M,30);
+    font('bold',9,C.ink);doc.text('FOR REFERENCE ONLY',W/2,30,{align:'center'});
+    font('bold',11,C.ink);doc.text(pclean(`${meta.reg||'Reg —'}   ·   S/N ${meta.sn||'—'}`),W-M,30,{align:'right'});
+    if(meta.times){font('normal',8.5,C.dim);doc.text(pclean(meta.times),W-M,44,{align:'right'})}
+    doc.setDrawColor(...C.rule);doc.setLineWidth(.8);doc.line(M,hdrH-8,W-M,hdrH-8);y=hdrH+10;
+  }
+  const need=h=>{if(y+h>H-46){doc.addPage();header()}};
+  function para(t,{size=10,color=C.ink,bold=false,indent=0,lh=1.38}={}){
+    font(bold?'bold':'normal',size,color);
+    for(const raw of pclean(t).split('\n')){const lines=doc.splitTextToSize(raw||' ',CW-indent);
+      for(const ln of lines){need(size*lh);font(bold?'bold':'normal',size,color);doc.text(ln,M+indent,y+size*.9);y+=size*lh}}
+  }
+  function label(t,col,sub){need(30);y+=8;font('bold',8.5,col);doc.text(pclean(t),M,y+8);if(sub){font('normal',8,C.dim);doc.text(pclean(sub),W-M,y+8,{align:'right'})}doc.setDrawColor(...col);doc.setLineWidth(.6);doc.line(M,y+12,M+CW,y+12);y+=18}
+  header();
+  font('bold',15,C.ink);const tl=doc.splitTextToSize(pclean(melTitle(g)),CW);doc.text(tl.slice(0,3),M,y+14);y+=20*Math.min(3,tl.length)+2;
+  font('normal',9,C.dim);doc.text(doc.splitTextToSize(pclean(`${APPNAME} · ${melRef(g)}${meta.apt?' · Airport '+meta.apt:''} · Exported ${dmyt(new Date())}`),CW),M,y+6);y+=18;
+  // summary box
+  const iv=melInterval(r,meta.ops,meta.disc);
+  const rows=[['Repair category',`${r.cat}${r.auth?'  <'+r.auth+'>':''}`],...(r.inst!=null?[['Installed / required',`${r.inst||'—'} / ${r.req||'—'}`]]:[]),...(r.qual?[['Applies to',r.qual]]:[]),...(r.note?[['Applies to',r.note]]:[]),
+    ...(r.moppv?[['Note',`Category / installed / required from the MMEL. The MOPP shows ${r.moppv}; the MMEL governs.`]]:[]),['Operating rule',meta.ops.label],['Day of discovery',fmtDate(meta.disc)],['Repair interval',iv.line+(iv.due?`  Repair by end of ${fmtDate(iv.due)}.`:'')],
+    ['Sources',`MMEL Rev ${MEL.mmel.rev} ${g.mmel?g.mmel[1]:''} · MOPP Rev ${MEL.mopp.rev} ${(r.mopp||[]).map(x=>x[1]).join(', ')}`]];
+  for(const [k,v] of rows){font('normal',9.5);const vl=doc.splitTextToSize(pclean(v),CW-130);need(vl.length*13+4);font('bold',9,C.dim);doc.text(pclean(k),M,y+9);font('normal',9.5,C.ink);doc.text(vl,M+130,y+9);y+=vl.length*13+3}
+  label('DISPATCH AUTHORITY',C.teal);
+  const tmp=document.createElement('div');tmp.innerHTML=melAuthorityHtml(g,meta.ops);
+  [...tmp.querySelectorAll('.melrow')].forEach(el=>{para(el.textContent,{size:9.5});y+=3});
+  const pr=melProcs(r);
+  label('CONDITIONS TO DISPATCH',C.amber,'MMEL Remarks or Exceptions');para(r.rem||r.lim||'—');
+  if(r.m!==undefined){label('(M) MAINTENANCE PROCEDURE',C.amber,'For Maintenance'+(pr.M?' · REQUIRED':''));para(r.m||'None required.')}
+  label('(O) OPERATIONAL PROCEDURE',C.amber,'For Flight Crew'+(pr.O?' · REQUIRED':''));para(r.o||'None required.');
+  if(r.p!==undefined){label('PLACARDING PROCEDURE',C.amber,'For Maintenance');para(r.p||'—')}
+  // sign-off
+  label('SIGN-OFF',C.teal);
+  const line=(t)=>{need(30);y+=14;font('normal',9,C.dim);doc.text(pclean(t),M,y);doc.setDrawColor(...C.rule);doc.line(M+170,y+2,W-M,y+2);y+=8};
+  line('Deferred by (name / certificate no.)');line('Date / time deferred');if(r.m!==undefined)line('(M) procedure accomplished by');line('Placard installed by');line('PIC acknowledgement (O) procedure');line('Repaired / cleared by, date');
+  y+=10;need(30);font('normal',8,C.dim);doc.text(doc.splitTextToSize('Reference aid built from the Gulfstream '+(MEL.model||'GVII-G500/G600')+' MMEL and MOPP. Dispatch must follow the operator\'s own approved MEL, procedures and the AFM. Verify against the current revisions.',CW),M,y+8);
+  const n=doc.getNumberOfPages();for(let p=1;p<=n;p++){doc.setPage(p);font('normal',8,C.dim);doc.text(pclean(melTitle(g)).slice(0,90),M,H-26);doc.text(`Page ${p} of ${n}`,W-M,H-26,{align:'right'})}
+  return doc.output('blob');
+}
+function melExport(g,r){
+  const last=store.get(LAST_AC_KEY,null)||{};
+  const reg0=val('#fReg')||last.reg||'',sn0=val('#fSn')||last.sn||'';
+  showModal('MEL DEFERRAL PDF',`<div class="kv"><b>${esc(melTitle(g))}</b><br>Category ${esc(r.cat)} · ${esc(melOps().label)} · discovered ${esc(fmtDate(parseDay($('#melDate').value)))}</div>
+    <div class="grid2"><div class="field"><label>Registration</label><input id="exReg" value="${esc(reg0)}" placeholder="N1KE" autocapitalize="characters" autocomplete="off"></div><div class="field"><label>Serial number</label><input id="exSn" value="${esc(sn0)}" placeholder="${esc(SN_HINT)}" autocomplete="off"></div></div>
+    <button class="btn" id="exPdf">Create PDF</button><div id="exOut" style="margin-top:12px"></div>`);
+  $('#exPdf').onclick=async()=>{
+    const reg=$('#exReg').value.trim().toUpperCase(),sn=$('#exSn').value.trim();if(reg||sn)store.set(LAST_AC_KEY,{reg,sn});
+    const btn=$('#exPdf');btn.disabled=true;btn.textContent='Creating PDF…';$('#exOut').innerHTML='';
+    try{
+      const f=collectForm();
+      const meta={reg,sn,apt:f.apt,times:timesLine(f),ops:melOps(),disc:parseDay($('#melDate').value)};
+      const blob=await buildMelPdf(meta,g,r);
+      const id=g.kind==='cas'?'CAS':`${g.ata}-${g.seq}`;
+      const name=`${[(reg||APPNAME).replace(/[^A-Za-z0-9-]/g,''),'MEL',id,dateCode(meta.disc)].join('_')}.pdf`;
+      const file=new File([blob],name,{type:'application/pdf'}),url=URL.createObjectURL(blob);
+      btn.textContent='✔ PDF ready';
+      const canShare=!!(navigator.canShare&&navigator.canShare({files:[file]}));
+      $('#exOut').innerHTML=`<div class="kv" style="margin-bottom:8px">${esc(name)} · ${(blob.size/1024).toFixed(0)} KB</div>
+        <div class="grid2">${canShare?'<button class="btn" id="exShare">Share / Save</button>':''}<a class="btn2" href="${url}" download="${esc(name)}" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;text-decoration:none;${canShare?'':'grid-column:1/-1'}">${canShare?'Open':'Download PDF'}</a></div>`;
+      if(canShare)$('#exShare').onclick=async()=>{try{await navigator.share({files:[file],title:name})}catch(e){if(e.name!=='AbortError')$('#exOut').insertAdjacentHTML('beforeend',`<div class="errbox" style="margin-top:8px">${esc(e.message)}</div>`)}};
+    }catch(e){btn.disabled=false;btn.textContent='Create PDF';$('#exOut').innerHTML=`<div class="errbox">${esc(e.message||String(e))}</div>`}
+  };
+}
+
+/* ═════════════════ SOLAIRUS AMDL (Aircraft Maintenance Discrepancy Log, Form 502.1) ═════════════════ */
+// The blank form is stamped, never redrawn: the operator's own PDF (private data repo, forms/solairus_amdl.pdf) is loaded
+// with pdf-lib and the entries are written into its boxes. Coordinates are PDF points from the top-left of the 792 x 612 page.
+const PDFLIB_URL='https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js';
+const FONTKIT_URL='https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js';
+const AMDL_FORM='forms/solairus_amdl.pdf';
+const AMDL_PERSON_KEY='g550ts_amdl_person';
+const AMDL_IDS={reg:'amReg',logno:'amLog',date:'amDate',aftt:'amAftt',aftc:'amAftc',misc:'amMisc',initBy:'amInitBy',initDate:'amInitDate',disc:'amDisc',melRef:'amRef',cat:'amCat',aDays:'amADays',otherDays:'amOther',exp:'amExp',defText:'amDef',defName:'amDefName',defCert:'amDefCert',defLoc:'amDefLoc',defDate:'amDefDate',mx:'amMx',corr:'amCorr',pnOff:'amPnOff',snOff:'amSnOff',pnOn:'amPnOn',snOn:'amSnOn',sigName:'amSigName',sigCert:'amSigCert',sigLoc:'amSigLoc',sigDate:'amSigDate'};
+const AMDL_BOX={ // x, baseline (from top), max width
+  reg:[42,55,115],logno:[667,55,72],aftt:[45,75,113],aftc:[45,95.5,113],date:[46,115.5,112],misc:[44,136,114],
+  mx:[442,116,296],mx2:[384,136,354],
+  initBy:[141,158,92],initDate:[258,158,48],
+  disc:[[312,158,426],[23,177.5,716],[23,197.5,716],[23,217.5,716]],
+  melRef:[160,238,73],aDays:[291,239.5,20],otherDays:[604,239.5,28],exp:[653,238.5,86],
+  defText:[[23,258,716],[23,278.5,716],[23,299,716],[23,318.5,716]],
+  defName:[240,341,174],defCert:[421,341,138],defLoc:[566,341,102],defDate:[675,341,64],
+  corr:[[95,380.5,644],[23,400.5,716],[23,421,716],[23,441,716],[23,461.5,716]],
+  pnOff:[48,482,148],snOff:[228,482,150],pnOn:[407,482,152],snOn:[588,482,152],
+  sigName:[240,503,174],sigCert:[421,503,138],sigLoc:[566,503,102],sigDate:[675,503,64],
+  riiName:[240,523,174],riiCert:[421,523,138],riiLoc:[566,523,102],riiDate:[675,523,64]
+};
+const AMDL_CAT={A:[269.8,232.4],B:[352.6,233.1],C:[422.2,232.9],D:[492.8,233.2],OTHER:[563.7,232.2]}; // checkbox top-left
+let _amdlLib=null;
+function amdlLib(){
+  if(!_amdlLib)_amdlLib=(async()=>{
+    if(!window.PDFLib)await loadScript(PDFLIB_URL);
+    if(!window.fontkit)try{await loadScript(FONTKIT_URL)}catch(e){}
+    let lato=null;try{const b64=await ttfB64(LATO.normal);lato=Uint8Array.from(atob(b64),c=>c.charCodeAt(0))}catch(e){}
+    return {lato};
+  })().catch(e=>{_amdlLib=null;throw e});
+  return _amdlLib;
+}
+const mdy=d=>d?dmy(d):'';
+const isoDay=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+function isoToMdy(v){return v?mdy(parseDay(v)):''}
+function oneLine(s){return pclean(String(s||'').replace(/\s*\n\s*/g,' ').replace(/\s{2,}/g,' ').trim())}
+// short MEL text for the deferral lines: "(M) …  (O) …  Placard: …"
+function amdlDeferralText(g,r,ref){
+  const none=s=>!s||/^none required\.?$/i.test(s.trim());
+  const P=[`${g.kind==='cas'?g.name+' CAS':melTitle(g)}${r.qual?' '+r.qual:''}${r.note?' ('+r.note+')':''} deferred IAW ${ref||'MEL'} Cat ${r.cat}.`];
+  if(!none(r.m))P.push('(M) '+oneLine(r.m));
+  if(!none(r.o))P.push('(O) '+oneLine(r.o));
+  if(r.p)P.push('Placard: '+oneLine(r.p));
+  return P.join('  ');
+}
+async function buildAmdl(v){
+  const {lato}=await amdlLib();
+  const {PDFDocument,StandardFonts,rgb}=window.PDFLib;
+  const tpl=await rawFetch(AMDL_FORM);
+  const doc=await PDFDocument.load(tpl);
+  let font;
+  if(lato&&window.fontkit){doc.registerFontkit(window.fontkit);try{font=await doc.embedFont(lato,{subset:true})}catch(e){font=null}}
+  if(!font)font=await doc.embedFont(StandardFonts.Helvetica);
+  const page=doc.getPages()[0],H=page.getHeight(),ink=rgb(.05,.12,.35);
+  const put=(t,[x,y,w],size=9)=>{t=oneLine(t);if(!t)return;let s=size;while(s>5.5&&font.widthOfTextAtSize(t,s)>w)s-=.25;
+    while(t.length>1&&font.widthOfTextAtSize(t,s)>w)t=t.slice(0,-2)+'…';page.drawText(t,{x,y:H-y,size:s,font,color:ink})};
+  // wrap a paragraph over several boxed lines, shrinking the size until it fits
+  const flow=(t,boxes,size=9)=>{t=oneLine(t);if(!t)return '';let s=size,lines;
+    const wrap=s=>{const out=[];let cur='',i=0;for(const w of t.split(' ')){const lim=boxes[Math.min(out.length,boxes.length-1)][2];const nx=cur?cur+' '+w:w;
+      if(font.widthOfTextAtSize(nx,s)<=lim)cur=nx;else{if(cur)out.push(cur);cur=w}}if(cur)out.push(cur);return out};
+    for(;;){lines=wrap(s);if(lines.length<=boxes.length||s<=6)break;s-=.25}
+    lines.slice(0,boxes.length).forEach((ln,i)=>{const b=boxes[i];put(i===boxes.length-1&&lines.length>boxes.length?ln+' …':ln,[b[0],b[1],b[2]],s)});
+    return lines.length>boxes.length?'truncated':''};
+  const B=AMDL_BOX;
+  put(v.reg,B.reg,10);put(v.logno,B.logno);put(v.aftt,B.aftt);put(v.aftc,B.aftc);put(v.date,B.date);put(v.misc,B.misc);
+  if(v.mx){const w=flow(v.mx,[B.mx,B.mx2],8)}
+  put(v.initBy,B.initBy,8.5);put(v.initDate,B.initDate,8.5);
+  const notes=[];
+  if(flow(v.disc,B.disc))notes.push('discrepancy');
+  if(v.deferral){
+    put(v.melRef,B.melRef,8.5);
+    const cat=AMDL_CAT[v.cat];
+    if(cat){page.drawText('X',{x:cat[0]+1.1,y:H-cat[1]-5.6,size:7.5,font,color:ink})}
+    if(v.cat==='A'&&v.aDays)put(v.aDays,B.aDays,8);
+    if(v.cat==='OTHER'&&v.otherDays)put(v.otherDays,B.otherDays,8);
+    put(v.exp,B.exp,8.5);
+    if(flow(v.defText,B.defText,8.5))notes.push('deferral');
+    put(v.defName,B.defName,8.5);put(v.defCert,B.defCert,8.5);put(v.defLoc,B.defLoc,8.5);put(v.defDate,B.defDate,8.5);
+  }
+  if(flow(v.corr,B.corr))notes.push('corrective action');
+  put(v.pnOff,B.pnOff,8.5);put(v.snOff,B.snOff,8.5);put(v.pnOn,B.pnOn,8.5);put(v.snOn,B.snOn,8.5);
+  put(v.sigName,B.sigName,8.5);put(v.sigCert,B.sigCert,8.5);put(v.sigLoc,B.sigLoc,8.5);put(v.sigDate,B.sigDate,8.5);
+  doc.setTitle(`AMDL ${v.reg||''} ${v.logno||''}`.trim());doc.setAuthor(v.initBy||'');doc.setSubject('Solairus Aviation Form 502.1');
+  const bytes=await doc.save();
+  return {blob:new Blob([bytes],{type:'application/pdf'}),notes};
+}
+// open the AMDL form; pre = {disc, deferral:{g,r}} from the MEL tab or a troubleshooting case
+function openAmdl(pre){
+  pre=pre||{};const f=collectForm();const last=store.get(LAST_AC_KEY,null)||{};const me=store.get(AMDL_PERSON_KEY,{})||{};
+  const def=pre.deferral;const disc=pre.discDate||parseDay($('#melDate')?.value);const today=new Date();
+  const ref=def?(def.g.kind==='cas'?`MEL CAS - ${def.g.name}`:`MEL ${def.g.ata}-${def.g.seq}${def.g.k.split('-').length>2?'-'+def.g.k.split('-').slice(2).join('-'):''}`):'';
+  const iv=def?melInterval(def.r,melOps(),disc):null;
+  const cat=def?def.r.cat:'';
+  const aDays=def&&cat==='A'?((def.r.rem||def.r.lim||'').match(/within\s+(\d+)\s+(?:consecutive\s+)?(?:calendar|flight)/i)||[])[1]||'':'';
+  const fld=(id,label,val,ph='',extra='')=>`<div class="field"><label>${label}</label><input id="${id}" value="${esc(val||'')}" placeholder="${esc(ph)}" autocomplete="off" ${extra}></div>`;
+  showModal('SOLAIRUS AMDL',`<div class="kv">Solairus Aviation Form 502.1 · Aircraft Maintenance Discrepancy Log. Entries are typed onto the blank form; signatures are left for ink or e-signature.</div>
+    <div class="grid3">${fld('amReg','Reg',(f.reg||last.reg||'').toUpperCase(),'N1KE','autocapitalize="characters"')}${fld('amLog','Log No.','','')}${fld('amDate','Date',mdy(def?disc:today),'DD MMM YYYY')}</div>
+    <div class="grid3">${fld('amAftt','AFTT',f.tt,'hrs')}${fld('amAftc','AFTC',f.cyc,'cycles')}${fld('amMisc','Misc',f.apt?`${f.apt}${f.sn?' · S/N '+f.sn:''}`:(f.sn?'S/N '+f.sn:''),'')}</div>
+    <h3 class="amh">Discrepancy</h3>
+    <div class="grid2">${fld('amInitBy','Initiated by',me.initBy||'','Name')}${fld('amInitDate','Date',mdy(def?disc:today),'DD MMM YYYY')}</div>
+    <div class="field"><textarea id="amDisc" rows="3">${esc(pre.disc||'')}</textarea></div>
+    ${def?`<h3 class="amh">Deferral</h3>
+    <div class="grid3">${fld('amRef','MEL/CDL/NEF ref',ref,'MEL 34-3')}
+      <div class="field"><label>Cat</label><select id="amCat">${['A','B','C','D','OTHER'].map(c=>`<option ${c===cat?'selected':''}>${c}</option>`).join('')}</select></div>
+      ${fld('amExp','Exp',iv&&iv.due?mdy(iv.due):'','DD MMM YYYY')}</div>
+    <div class="grid2">${fld('amADays','Cat A days',aDays,'days')}${fld('amOther','Other days','','days')}</div>
+    <div class="hint" style="margin:-4px 0 8px">${esc(iv?iv.line:'')}</div>
+    <div class="field"><label>Deferral text</label><textarea id="amDef" rows="5">${esc(amdlDeferralText(def.g,def.r,ref))}</textarea></div>
+    <div class="grid2">${fld('amDefName','Deferred by (name)',me.name||'','')}${fld('amDefCert','Certificate #',me.cert||'','')}${fld('amDefLoc','Location',f.apt||me.loc||'','KSJC','autocapitalize="characters"')}${fld('amDefDate','Date',mdy(disc),'DD MMM YYYY')}</div>`:''}
+    <details class="more" id="amCorrBox"><summary>▸ Corrective Action, Parts, Return to Service (Optional)</summary>
+      <div class="field"><label>MX performed</label><input id="amMx" autocomplete="off"></div>
+      <div class="field"><label>Corrective action</label><textarea id="amCorr" rows="3"></textarea></div>
+      <div class="grid2">${fld('amPnOff','PN off','')}${fld('amSnOff','SN off','')}${fld('amPnOn','PN on','')}${fld('amSnOn','SN on','')}</div>
+      <div class="grid2">${fld('amSigName','Signed by (name)',me.name||'','')}${fld('amSigCert','Certificate #',me.cert||'','')}${fld('amSigLoc','Location',f.apt||me.loc||'','')}${fld('amSigDate','Date','','DD MMM YYYY')}</div>
+    </details>
+    <button class="btn" id="amGo" style="margin-top:8px">Create AMDL</button><div id="amOut" style="margin-top:12px"></div>`);
+  // restore this case's saved AMDL entries, then the recorded corrective action
+  if(pre.caseBound&&CASE){
+    const sv=CASE.amdl||{};
+    for(const [k,id] of Object.entries(AMDL_IDS)){const e=$('#'+id);if(e&&sv[k])e.value=sv[k]}
+    const c=CASE.clearing;
+    if(c){const set=(id,val,force)=>{const e=$('#'+id);if(e&&val&&(force||!e.value))e.value=val};
+      const newer=c.at>(sv.clearAt||0);
+      set('amCorr',c.corrective_action,newer);set('amMx',c.mx_performed,newer);set('amPnOff',c.pn_off,newer);set('amSnOff',c.sn_off,newer);set('amPnOn',c.pn_on,newer);set('amSnOn',c.sn_on,newer);
+      set('amSigDate',mdy(new Date(c.at)));set('amSigLoc',f.apt||me.loc||'');
+      $('#amCorrBox').open=true}
+    let tmr=null;const saveDraft=()=>{clearTimeout(tmr);tmr=setTimeout(()=>{const o=CASE.amdl||{};for(const [k,id] of Object.entries(AMDL_IDS)){const e=$('#'+id);if(e)o[k]=e.value.trim()}
+      o.savedAt=Date.now();if(CASE.clearing)o.clearAt=CASE.clearing.at;CASE.amdl=o;saveCase()},400)};
+    $('#modalBody').addEventListener('input',saveDraft);$('#modalBody').addEventListener('change',saveDraft);
+  }
+  if($('#amCat'))$('#amCat').onchange=e=>{const n=REPAIR_DAYS[e.target.value];if(n&&!melOps().p91)$('#amExp').value=mdy(addDays(disc,n))};
+  $('#amGo').onclick=async()=>{
+    const g=id=>{const e=$('#'+id);return e?e.value.trim():''};
+    const v={reg:g('amReg').toUpperCase(),logno:g('amLog'),date:g('amDate'),aftt:g('amAftt'),aftc:g('amAftc'),misc:g('amMisc'),initBy:g('amInitBy'),initDate:g('amInitDate'),disc:g('amDisc'),
+      deferral:!!def,melRef:g('amRef'),cat:g('amCat'),aDays:g('amADays'),otherDays:g('amOther'),exp:g('amExp'),defText:g('amDef'),defName:g('amDefName'),defCert:g('amDefCert'),defLoc:g('amDefLoc').toUpperCase(),defDate:g('amDefDate'),
+      mx:g('amMx'),corr:g('amCorr'),pnOff:g('amPnOff'),snOff:g('amSnOff'),pnOn:g('amPnOn'),snOn:g('amSnOn'),sigName:g('amSigName'),sigCert:g('amSigCert'),sigLoc:g('amSigLoc').toUpperCase(),sigDate:g('amSigDate')};
+    if(!v.corr&&!v.mx){v.sigName=v.sigCert=v.sigLoc=v.sigDate=''}
+    store.set(AMDL_PERSON_KEY,{initBy:v.initBy,name:v.defName||v.sigName||me.name||'',cert:v.defCert||v.sigCert||me.cert||'',loc:v.defLoc||me.loc||''});
+    if(v.reg)store.set(LAST_AC_KEY,{reg:v.reg,sn:f.sn||last.sn||''});
+    if(pre.caseBound&&CASE){const o={};for(const [k,id] of Object.entries(AMDL_IDS)){const e=$('#'+id);if(e)o[k]=e.value.trim()}o.savedAt=Date.now();if(CASE.clearing)o.clearAt=CASE.clearing.at;CASE.amdl=o;saveCase();refreshCaseCard()}
+    const btn=$('#amGo');btn.disabled=true;btn.textContent='Creating AMDL…';$('#amOut').innerHTML='';
+    try{
+      const {blob,notes}=await buildAmdl(v);
+      const tag=def?(def.g.kind==='cas'?'CAS':`${def.g.ata}-${def.g.seq}`):(caseAta(CASE&&CASE.form)||'DISC');
+      const name=`${[(v.reg||APPNAME).replace(/[^A-Za-z0-9-]/g,''),'AMDL',v.logno.replace(/[^A-Za-z0-9-]/g,'')||null,tag,dateCode(def?disc:today)].filter(Boolean).join('_')}.pdf`;
+      const file=new File([blob],name,{type:'application/pdf'}),url=URL.createObjectURL(blob);
+      btn.textContent='✔ AMDL ready';
+      const canShare=!!(navigator.canShare&&navigator.canShare({files:[file]}));
+      $('#amOut').innerHTML=`${notes.length?`<div class="melrow melwarn">The ${notes.join(' and ')} text is longer than the form's lines and was cut off with "…". Shorten it and create again.</div>`:''}<div class="kv" style="margin-bottom:8px">${esc(name)} · ${(blob.size/1024).toFixed(0)} KB</div>
+        <div class="grid2">${canShare?'<button class="btn" id="amShare">Share / Save</button>':''}<a class="btn2" href="${url}" download="${esc(name)}" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;text-decoration:none;${canShare?'':'grid-column:1/-1'}">${canShare?'Open':'Download PDF'}</a></div>`;
+      if(canShare)$('#amShare').onclick=async()=>{try{await navigator.share({files:[file],title:name})}catch(e){if(e.name!=='AbortError')$('#amOut').insertAdjacentHTML('beforeend',`<div class="errbox" style="margin-top:8px">${esc(e.message)}</div>`)}};
+    }catch(e){btn.disabled=false;btn.textContent='Create AMDL';$('#amOut').innerHTML=`<div class="errbox">${esc(/404|not found/i.test(e.message)?'The blank AMDL form (forms/solairus_amdl.pdf) is not in the data repo.':e.message||String(e))}</div>`}
+  };
+}
+function caseDiscrepancy(){
+  const f=(CASE&&CASE.form)||collectForm();const P=[];
+  (f.faults||[]).forEach(x=>P.push(`${x.msg}${x.color?' ('+x.color+')':''} CAS message posted.`));
+  (f.cmc||[]).forEach(x=>P.push(`CMC: ${x.kind==='code'?x.code:x.msg}.`));
+  if(f.desc)P.push(f.desc);
+  return P.join(' ');
+}
 
 /* ═════════════════ BOOT ═════════════════ */
 (async function boot(){
