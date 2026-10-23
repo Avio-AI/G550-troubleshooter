@@ -1101,7 +1101,7 @@ async function resolveCite(c){
 async function openPage(docId,page){
   const pg=await getPage(docId,page);if(!pg){showModal('Page','<div class="errbox">Page not found.</div>');return}
   const d=pg.doc;
-  const local=`C:\\Gulfstream PDFs\\${d.path.replace(/\//g,'\\')}`;
+  const local=`C:\\Gulfstream PDFs\\G550\\${d.path.replace(/\//g,'\\')}`;
   showModal(pg.cite,`<div class="kv"><b>${esc(d.m)} — ${esc(d.title)}</b><br>${esc(d.type||'')} · ATA ${esc(d.ata||'—')} · page ${page} of ${d.pages} · rev ${esc(dmyStr(d.rev||''))}<br>PDF: <span style="font-family:var(--mono);font-size:12px">${esc(local)}</span> (page ${page})</div>
    <div style="display:flex;gap:8px;margin-bottom:10px"><button class="btn2 small" id="pgPrev" ${page<=1?'disabled':''}>◂ Prev</button><button class="btn2 small" id="pgNext" ${page>=d.pages?'disabled':''}>Next ▸</button><button class="btn2 small" id="pgCopy">Copy text</button></div>
    <div class="pagetext">${esc(pg.text)}</div>`);
