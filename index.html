@@ -476,6 +476,17 @@ header .gsearch{margin-top:8px}
 .sumstat{display:inline-block;border-radius:8px;padding:4px 10px;font-size:13px;font-weight:500;background:var(--tonal);color:var(--on-tonal)}
 .sumstat.deferred{background:#fde7c8;color:#7a3e00}.sumstat.cleared{background:#d6f0dc;color:#0d5323}.sumstat.closed{background:var(--panel);color:var(--text-dim)}
 .sumbody h4{margin:14px 0 6px}
+
+/* wiring (WDM wire lists) */
+.ptable{width:100%;border-collapse:collapse;table-layout:fixed;font-family:var(--mono);font-size:12.5px}
+.ptable th,.ptable td{overflow-wrap:anywhere;border-bottom:1px solid var(--border);padding:5px 6px;text-align:left;vertical-align:top}
+.ptable th{color:var(--cyan);font-weight:500;position:sticky;top:0;background:var(--surface);font-family:var(--sans)}
+.ptable td.eff{color:var(--text-dim);font-size:11.5px}
+.ptable .sub{font-size:11px;color:var(--text-dim);margin-top:2px}.ptable td{font-size:12px}
+.ptable .far,.ptable .wirecell{color:var(--cyan);cursor:pointer}
+.pwrap{overflow-x:hidden;max-height:60dvh;overflow-y:auto;border:1px solid var(--border);border-radius:12px}
+.dlink{display:inline-block;font-family:var(--sans);font-weight:500;font-size:12px;color:var(--cyan);border:1px solid var(--border2);border-radius:8px;padding:2px 8px;margin:3px 4px 0 0;cursor:pointer}
+.pagetext mark{background:#ffe08a;color:#000;border-radius:3px}
 </style>
 </head>
 <body>
@@ -502,6 +513,7 @@ header .gsearch{margin-top:8px}
         <button class="tab on" data-tab="describe"><span class="pill"><span class="ms">edit_note</span></span>Describe</button>
         <button class="tab" data-tab="search"><span class="pill"><span class="ms">search</span></span>Search</button>
         <button class="tab" data-tab="mel"><span class="pill"><span class="ms">fact_check</span></span>MEL</button>
+        <button class="tab" data-tab="wiring"><span class="pill"><span class="ms">cable</span></span>Wiring</button>
       </div>
 
       <div id="caseForm">
@@ -605,6 +617,20 @@ header .gsearch{margin-top:8px}
           <button class="btn2 small hidden" id="melAmdlBlank" style="margin-top:10px">Discrepancy-Only AMDL (No Deferral)</button>
         </div>
         <div id="melResults"></div>
+      </div>
+
+      <!-- WIRING LOOKUP -->
+      <div id="wiringPane" class="hidden">
+        <div class="card">
+          <h3>Wiring Lookup (WDM)</h3>
+          <div class="field"><input id="wQuery" placeholder="Designator (171A1, 292A1P1, 331A1J7), wire number (1H503A22) or equipment name" autocomplete="off" autocapitalize="characters" spellcheck="false"></div>
+          <div class="grid2">
+            <div class="field"><select id="wMode"><option value="comp">Find Component</option><option value="pins">Connector Pin-Out</option><option value="wire">Trace Wire Number</option></select></div>
+            <div class="field"><button class="btn2" id="wGo" style="width:100%">Look Up</button></div>
+          </div>
+          <div class="hint">From the G550 WDM wire lists, equipment locators and schematics. With an S/N on the Describe tab, only wiring effective for that serial is shown. No AI or API key needed.</div>
+        </div>
+        <div id="wResults"></div>
       </div>
 
       <!-- DIRECT SEARCH -->
@@ -716,6 +742,7 @@ async function loadCore(){
     DATA.manifest=await fetchData('manifest.json',{cache:false});
     [DATA.catalog,DATA.faults,DATA.fsimap]=await Promise.all([fetchData('catalog.json'),fetchData('faults.json'),fetchData('fsi_pagemap.json')]);
     DATA.byId=DATA.catalog;
+    DATA.wcomps=null;if(DATA.wpins)DATA.wpins.clear();
     DATA.ready=true; setDot('ok'); renderBadges(); fillChapterSelect();
   }catch(e){
     setDot('err'); renderBadges(e.message); console.error(e);
@@ -871,6 +898,12 @@ const TOOLS=[
   input_schema:{type:'object',properties:{doc_id:{type:'integer'},pdf_page:{type:'integer'},count:{type:'integer',description:'Pages to read, default 1, max 4'}},required:['doc_id','pdf_page']}},
  {name:'list_documents',description:'List documents in the library catalog filtered by ATA prefix (e.g. "21-31" or "36"), manual and/or title words. Use to find the right AMM task (System Description, Adjustment/Test, Removal/Installation), WDM schematic/wire list, IPC figure or FSI chapter for a system.',
   input_schema:{type:'object',properties:{ata_prefix:{type:'string'},manual:{type:'string',enum:['AMM','FIM','IPC','WDM','TPG','FSI','MMEL','MOPP']},title_contains:{type:'string'}}}},
+ {name:'find_component',description:'Find G550 wiring items in the WDM wire-list index by reference designator or equipment name words: units / LRUs (e.g. 171A1 Left Bleed Air Wing Anti-Ice), connectors (171A1P2, 331A1J7), splices, ground studs (E4007D). Returns type, description, ATA, number of wires and the WDM drawings / wire-list pages it appears on (doc_id, pdf_page for read_pages). Units list their connectors.',
+  input_schema:{type:'object',properties:{query:{type:'string',description:'e.g. "171A1", "292A1P1", "E4007D", "BLEED AIR"'}},required:['query']}},
+ {name:'get_connector_pins',description:'Get the WDM wire-list pin-out of a connector, splice or ground stud: for each pin the wire number (gauge = last two digits, color in brackets), cable, far-end designator and pin, and the S/N effectivity. Filtered to the aircraft S/N from the case when known. Use it to say exactly which pins / wires to meter and where the other end goes.',
+  input_schema:{type:'object',properties:{connector:{type:'string',description:'Exact designator, e.g. "171A1P2"'},filter:{type:'string',description:'Optional text filter on rows (pin, wire, far end)'},all_serials:{type:'boolean',description:'true = include wires for other serial numbers'}},required:['connector']}},
+ {name:'trace_wire',description:'Trace a wire number through the WDM wire lists: every connector-pin to connector-pin segment carrying it (prefix match, e.g. "1H503" finds 1H503A22, 1H503B22…), with effectivity and the wire-list page, so you can follow a circuit through splices and junction boxes end to end.',
+  input_schema:{type:'object',properties:{wire:{type:'string'},all_serials:{type:'boolean'}},required:['wire']}},
  {name:'lookup_mel',description:'Look up MEL dispatch relief for an inoperative item or a CAS message in the Gulfstream G-V / GV-SP (G550) / GIV-X MMEL (Rev 11) with the Gulfstream MOPP (items marked GV / GV-SP / GIV-X apply only to that model; this aircraft is a GV-SP). Returns for each relief option: repair category, number installed / required for dispatch, the MMEL remarks or exceptions (conditions), the (M) maintenance procedure, (O) operational procedure and placard, the repair interval and the dispatch authority under the operating rule set in the app, with MMEL / MOPP citations. Use it when the technician asks whether the aircraft can be dispatched, or when your conclusion leaves an item inoperative. Search with the system / item words as the MMEL names them (e.g. "water line heater", not a part number or reference designator). If the failed part is not named in the results, also search the two-digit ATA chapter alone (e.g. "38") to list every item in that chapter, and choose the most specific item that covers the failed part (a heater item over the whole water system).',
   input_schema:{type:'object',properties:{query:{type:'string',description:'Item or CAS message words, or MMEL item number, e.g. "pack inlet valve", "yaw damper", "ACS FAIL", "21-14"'}},required:['query']}},
  {name:'record_mel_deferral',description:'Record that an MEL deferral is verified as necessary for this case, so the app fills the MEL deferral section of the operator paperwork (the Solairus AMDL when that operating rule is set) and offers it to the technician. Call it only when (1) the fault will not be corrected before the next flight (the technician said so, or asked to defer), (2) lookup_mel found relief for the actual failed item under the operating rule, and (3) you have picked the relief option whose conditions match this aircraft. Never call it as a suggestion or for an item without relief.',
@@ -924,6 +957,21 @@ async function runTool(name,input){
         paperwork:ops.amdl?'Solairus AMDL MEL section is filled and offered to the technician (Create Solairus AMDL).':'Deferral sheet is offered to the technician (Create Deferral PDF).',
         reminder:'Tell the technician the deferral is ready to sign, and list the (M) steps, (O) briefing and placard still to complete.'}};
     }
+    if(name==='find_component'){
+      const r=(await wFind(input.query,{max:20})).map(wComp);r.forEach(c=>c.drawings.forEach(d=>registerSource(d)));
+      return {summary:`${r.length} item${r.length===1?'':'s'}`,data:{matches:r,serial_filter:wSn()||'none (no S/N in the case)'}};
+    }
+    if(name==='get_connector_pins'){
+      const sn=input.all_serials?null:wSn();const t=await wConnPins(input.connector,{filter:input.filter,sn});
+      if(!t.length)return {summary:'not found',data:{error:`No wire-list pin table for "${input.connector}". Check the designator with find_component (units like 171A1 have connectors like 171A1P1 / P2).`}};
+      const T=t[0];const cites=[...new Set(T.rows.map(wSrcCite).filter(Boolean))].slice(0,6);
+      return {summary:`${T.connector} · ${T.rows.length} wires`,data:{connector:T.connector,serial_filter:sn||'all serials',hidden_other_serials:T.total-T.rows.length||undefined,pins:T.rows.slice(0,160).map(wPinObj),truncated:T.rows.length>160||undefined,cite_as:cites}};
+    }
+    if(name==='trace_wire'){
+      const sn=input.all_serials?null:wSn();const r=await wTrace(input.wire,{sn});
+      r.forEach(x=>{const d=DATA.catalog[x.doc_id];if(d){x.cite=citeFor(d,x.pdf_page,'');registerSource({cite:x.cite,doc_id:x.doc_id,pdf_page:x.pdf_page})}});
+      return {summary:`${r.length} segment${r.length===1?'':'s'}`,data:{serial_filter:sn||'all serials',segments:r}};
+    }
     if(name==='search_manuals'){
       const max=Math.min(15,Math.max(1,input.max_results|0||8));
       const r=await searchManuals(input.query||'',{chapters:input.ata_chapters,manuals:input.manuals,max});
@@ -974,7 +1022,7 @@ Known gaps: ${(m.gaps||[]).join(' | ')}
 4. Build a differential: list the candidate causes (FIM probable causes plus any the system logic implies), and for each say what evidence supports or contradicts it. Rank them.
 5. Recommend the single most discriminating next check — the test that best separates the top hypotheses, with the least effort and risk — with exact steps, connector/pin/wire identifiers from FIM/WDM, expected values and pass/fail interpretation. Follow FIM order unless the evidence justifies deviating; when you deviate, say why.
 6. When the technician reports results, update the differential explicitly ("this eliminates X because…") and continue until you can state a conclusion: what failed, why it produced these symptoms, the corrective action (AMM task), and the required ops/functional check after repair.
-7. Use WDM for wiring (designators like 171A7P1, wire numbers, splices, ground studs, circuit breakers) and IPC for part numbers when replacement is likely.
+7. Wiring: use find_component, get_connector_pins and trace_wire (the WDM wire-list index: designators like 171A1P2, wire numbers like 1H503A22, splices, ground studs, with S/N effectivity filtered to this aircraft) to name exact connectors, pins and wires to meter and where the far end goes; read the WDM schematic / wiring diagram pages they return for circuit logic. Use IPC for part numbers when replacement is likely.
 8. Dispatch: when the technician asks about deferring, or the fault cannot be fixed before the next flight, call lookup_mel. State the relief (category, installed / required, every condition), who authorizes it under the operating rule the tool returns (MEL + LOA/OpSpec, PIC acceptance), the repair-by interval, and split the procedures by role: (M) for maintenance, (O) for the flight crew, placard for maintenance. If there is no relief, say the item must be repaired before flight. When deferral is verified as necessary (the fault won't be fixed before the next flight and the chosen relief's conditions fit this aircraft), call record_mel_deferral with the mel_id and option from lookup_mel and a log-style discrepancy entry; the app then fills the MEL section of the operator's discrepancy log (Solairus AMDL) for signature. Do not record a deferral the technician hasn't chosen. When the technician later reports the fix is complete (part replaced, adjustment made, operational test / functional check passed), call record_corrective_action with a log-style corrective action that cites the AMM removal/installation and operational test tasks you found, and the P/N and S/N off/on exactly as the technician gave them (ask for any that are missing rather than guessing).
 Do not stop at one search: search, read the relevant pages, cross-check between manuals. Keep tool calls purposeful (typically 3–10 per turn).
 
@@ -1123,7 +1171,7 @@ function md(src){
   }
   closeLists();return html;
 }
-const TOOL_LABEL={record_corrective_action:i=>'Corrective action recorded',record_mel_deferral:i=>'MEL deferral recorded',lookup_mel:i=>`MEL: “${i.query||''}”`,lookup_fault:i=>`Fault index: “${i.query||''}”`,get_fim_procedure:i=>`FIM procedure ${i.proc_id||''}${i.offset?' (cont.)':''}`,search_manuals:i=>`Search ${(i.manuals||[]).join('/')||'all'}${i.ata_chapters?' ch '+i.ata_chapters.join(','):''}: “${i.query||''}”`,read_pages:i=>`Read doc ${i.doc_id} p${i.pdf_page}${i.count>1?'+'+(i.count-1):''}`,list_documents:i=>`List docs ${[i.manual,i.ata_prefix,i.title_contains].filter(Boolean).join(' · ')}`};
+const TOOL_LABEL={find_component:i=>`Wiring: “${i.query||''}”`,get_connector_pins:i=>`Pin-out ${i.connector||''}`,trace_wire:i=>`Trace wire ${i.wire||''}`,record_corrective_action:i=>'Corrective action recorded',record_mel_deferral:i=>'MEL deferral recorded',lookup_mel:i=>`MEL: “${i.query||''}”`,lookup_fault:i=>`Fault index: “${i.query||''}”`,get_fim_procedure:i=>`FIM procedure ${i.proc_id||''}${i.offset?' (cont.)':''}`,search_manuals:i=>`Search ${(i.manuals||[]).join('/')||'all'}${i.ata_chapters?' ch '+i.ata_chapters.join(','):''}: “${i.query||''}”`,read_pages:i=>`Read doc ${i.doc_id} p${i.pdf_page}${i.count>1?'+'+(i.count-1):''}`,list_documents:i=>`List docs ${[i.manual,i.ata_prefix,i.title_contains].filter(Boolean).join(' · ')}`};
 function toolLabel(b){const f=TOOL_LABEL[b.name];return f?f(b.input||{}):b.name}
 function toolEl(b,result){
   const el=document.createElement('div');el.className='tool'+(result?(result.error?' err':''):' run');el.dataset.id=b.id;
@@ -1222,14 +1270,16 @@ async function resolveCite(c){
   const doc=DATA.catalog.find(d=>d.m===man&&d.ata===ata);
   return doc?{doc_id:doc.id,pdf_page:1}:null;
 }
-async function openPage(docId,page){
+function hlText(t,hl){let h=esc(t);for(const w of (hl||[]).filter(Boolean)){const e=esc(w).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');h=h.replace(new RegExp(e,'gi'),m=>`<mark>${m}</mark>`)}return h}
+async function openPage(docId,page,hl){
   const pg=await getPage(docId,page);if(!pg){showModal('Page','<div class="errbox">Page not found.</div>');return}
   const d=pg.doc;
   const local=`C:\\Gulfstream PDFs\\G550\\${d.path.replace(/\//g,'\\')}`;
   showModal(pg.cite,`<div class="kv"><b>${esc(d.m)} — ${esc(d.title)}</b><br>${esc(d.type||'')} · ATA ${esc(d.ata||'—')} · page ${page} of ${d.pages} · rev ${esc(dmyStr(d.rev||''))}<br>PDF: <span style="font-family:var(--mono);font-size:12px">${esc(local)}</span> (page ${page})</div>
    <div style="display:flex;gap:8px;margin-bottom:10px"><button class="btn2 small" id="pgPrev" ${page<=1?'disabled':''}>◂ Prev</button><button class="btn2 small" id="pgNext" ${page>=d.pages?'disabled':''}>Next ▸</button><button class="btn2 small" id="pgCopy">Copy text</button></div>
-   <div class="pagetext">${esc(pg.text)}</div>`);
-  $('#pgPrev').onclick=()=>openPage(docId,page-1);$('#pgNext').onclick=()=>openPage(docId,page+1);
+   <div class="pagetext">${hlText(pg.text,hl)}</div>`);
+  $('#pgPrev').onclick=()=>openPage(docId,page-1,hl);$('#pgNext').onclick=()=>openPage(docId,page+1,hl);
+  {const m=$('.pagetext mark');if(m)m.scrollIntoView({block:'center'})}
   $('#pgCopy').onclick=()=>{navigator.clipboard?.writeText(`${pg.cite}\n${pg.text}`);$('#pgCopy').textContent='Copied'};
 }
 document.addEventListener('click',async e=>{
@@ -1394,7 +1444,7 @@ let curTab='describe';
 
 $$('.tab').forEach(t=>t.onclick=()=>{
   curTab=t.dataset.tab;$$('.tab').forEach(x=>x.classList.toggle('on',x===t));
-  $('#caseForm').classList.toggle('hidden',curTab==='search'||curTab==='mel');$('#searchPane').classList.toggle('hidden',curTab!=='search');$('#melPane').classList.toggle('hidden',curTab!=='mel');
+  $('#caseForm').classList.toggle('hidden',curTab==='search'||curTab==='mel'||curTab==='wiring');$('#wiringPane').classList.toggle('hidden',curTab!=='wiring');if(curTab==='wiring')setTimeout(()=>$('#wQuery').focus(),50);$('#searchPane').classList.toggle('hidden',curTab!=='search');$('#melPane').classList.toggle('hidden',curTab!=='mel');
   if(curTab==='mel')initMelPane();
   const ord={describe:['#faultCard','#cmcCard','#describeCard']}[curTab];
   if(ord){const order=ord;const cf=$('#caseForm');for(const id of order.slice().reverse())cf.prepend($(id))}
@@ -2535,6 +2585,84 @@ function caseStatusBar(){const log=$('#chatLog');if(!log||!CASE)return;let b=$('
 {const _rcS=renderCase;renderCase=function(){_rcS.apply(this,arguments);caseStatusBar()}}
 // keep the summary live: refresh after each finished reply once a summary exists, until the case is closed
 {const _raS=runAgent;runAgent=async function(){const r=await _raS.apply(this,arguments);try{caseStatusBar();if(CASE&&CASE.summary&&!CASE.closedAt&&summaryStale())makeSummary(false).catch(()=>{})}catch(e){}return r}}
+/* ═════════════════ WIRING (G550 WDM wire lists → components, connector pin-outs, wire trace; S/N effectivity) ═════════════════ */
+const WCTYPE={C:'Connector',S:'Splice / cap',G:'Ground',D:'Unit / device'};
+const WBADGE={C:'CONN',S:'SPLICE',G:'GND',D:'UNIT'};
+async function wLoadComps(){if(!DATA.wcomps)DATA.wcomps=fetchData('wiring/components.json.gz');try{return await DATA.wcomps}catch(e){DATA.wcomps=null;throw e}}
+DATA.wpins=new Map();
+async function wLoadPins(ch){if(DATA.wpins.has(ch))return DATA.wpins.get(ch);if(!(DATA.manifest.wiring?.pinChapters||[]).includes(ch))return null;
+  const p=fetchData(`wiring/pins/${ch}.json.gz`);DATA.wpins.set(ch,p);try{return await p}catch(e){DATA.wpins.delete(ch);throw e}}
+async function wAllPins(){const out=[];for(const ch of DATA.manifest.wiring?.pinChapters||[]){const p=await wLoadPins(ch);if(p)out.push(p)}return out}
+function wSn(){const v=(typeof CASE!=='undefined'&&CASE&&CASE.form&&CASE.form.sn)||($('#fSn')&&$('#fSn').value.trim())||'';const n=parseInt(String(v).replace(/\D/g,''),10);return n>=5000&&n<10000?n:null}
+function effOk(eff,sn){if(!sn||!eff)return true;return String(eff).split(',').some(p=>{const m=p.match(/(\d{4})\s*-\s*(\d{4})/);return m?sn>=+m[1]&&sn<=+m[2]:true})}
+function wDiag(d){const doc=DATA.catalog[d[0]];if(!doc)return null;return {doc_id:d[0],pdf_page:d[1],cite:citeFor(doc,d[1],''),title:doc.title,type:doc.type}}
+function wComp(c){return {designator:c[0],type:WCTYPE[c[1]]||c[1],description:c[4]||undefined,ata:c[5]||undefined,pin_count:c[6]||undefined,drawings:(c[7]||[]).map(wDiag).filter(Boolean)}}
+async function wFind(q,{max=25}={}){
+  const comps=await wLoadComps();const qq=String(q||'').trim().toUpperCase();if(!qq)return [];
+  const terms=qq.split(/\s+/);const out=[];
+  for(const c of comps){const name=c[0].toUpperCase(),hay=(c[0]+' '+c[4]+' '+c[5]).toUpperCase();
+    if(!terms.every(t=>hay.includes(t)))continue;
+    let s=0;if(name===qq)s+=100;else if(name.startsWith(qq))s+=40-Math.min(30,name.length-qq.length);if(c[1]==='D')s+=3;if(c[6])s+=2;out.push([s,c])}
+  return out.sort((a,b)=>b[0]-a[0]).slice(0,max).map(x=>x[1]);
+}
+async function wConnPins(name,{filter,sn}={}){
+  const N=String(name||'').trim().toUpperCase();if(!N)return [];
+  const comps=await wLoadComps();const c=comps.find(x=>x[0].toUpperCase()===N);
+  const chs=c&&c[5]?[c[5].slice(0,2),...(DATA.manifest.wiring?.pinChapters||[])]:(DATA.manifest.wiring?.pinChapters||[]);
+  for(const ch of [...new Set(chs)]){const p=await wLoadPins(ch);if(!p)continue;const k=Object.keys(p).find(k=>k.split('|')[0].toUpperCase()===N);
+    if(k){let rows=p[k];const all=rows.length;if(sn)rows=rows.filter(r=>effOk(r[10],sn));if(filter){const f=filter.toUpperCase();rows=rows.filter(r=>r.join(' ').toUpperCase().includes(f))}
+      return [{connector:k.split('|')[0],rows,hidden:all-rows.length-(filter?0:0),total:all}]}}
+  return [];
+}
+async function wTrace(w,{sn}={}){
+  const W=String(w||'').trim().toUpperCase().replace(/\(.*$/,'');if(!W)return [];const seen=new Set(),out=[];
+  for(const p of await wAllPins())for(const [k,rows] of Object.entries(p))for(const r of rows){
+    if(!r[2]||!r[2].toUpperCase().startsWith(W))continue;if(sn&&!effOk(r[10],sn))continue;
+    const a=k.split('|')[0]+'-'+(r[0]||'?'),b=(r[8]||'')+'-'+(r[7]||'?');const key=[r[2],...[a,b].sort(),r[10]].join('|');if(seen.has(key))continue;seen.add(key);
+    out.push({wire:r[2],end1:a,end2:r[8]?b:'(not connected)',gauge:r[4]||undefined,color:r[5]||undefined,cable:r[3]||undefined,effectivity:r[10],remarks:r[13]||undefined,doc_id:r[11],pdf_page:r[12]})}
+  return out.sort((x,y)=>x.wire.localeCompare(y.wire)).slice(0,200);
+}
+function effShort(e){return String(e||'').replace(/\s*-\s*/g,'–').replace(/–9999/g,'–on')}
+function wPinObj(r){return {pin:r[0]||'(none)',wire:r[2]||undefined,gauge_awg:r[4]||undefined,color:r[5]||undefined,cable:r[3]||undefined,far_end:r[8]?`${r[8]} pin ${r[7]||'(none)'}`:undefined,far_end_item:r[9]||undefined,effectivity:r[10]||undefined,remarks:r[13]||undefined}}
+function wSrcCite(r){const d=DATA.catalog[r[11]];if(!d)return '';const c=citeFor(d,r[12],'');registerSource({cite:c,doc_id:r[11],pdf_page:r[12]});return c}
+// ---- UI
+function wDrawLinks(ds,hl){return (ds||[]).map(x=>`<span class="dlink" data-d="${x.doc_id}" data-p="${x.pdf_page}" data-hl="${esc(hl||'')}">${esc(x.type?x.type.replace(' (xref)',''):'WDM')} ${esc((DATA.catalog[x.doc_id]||{}).ata||'')} p${x.pdf_page}</span>`).join(' ')}
+function wBind(root){root.querySelectorAll('.dlink[data-d]').forEach(el=>el.onclick=e=>{e.stopPropagation();openPage(+el.dataset.d,+el.dataset.p,el.dataset.hl?[el.dataset.hl]:null)});
+  root.querySelectorAll('[data-pins]').forEach(el=>el.onclick=e=>{e.stopPropagation();wShowPins(el.dataset.pins)});
+  root.querySelectorAll('[data-wire]').forEach(el=>el.onclick=e=>{e.stopPropagation();wShowWire(el.dataset.wire)})}
+function wSnNote(){const sn=wSn();return sn?`Showing wiring effective for <b>S/N ${sn}</b> (from the Describe tab).`:'Enter the aircraft S/N on the Describe tab to show only the wiring effective for that serial.'}
+async function wShowPins(name,showAll){
+  if(!name)return;showModal(`WDM ${name} pin-out`,'<div class="hint">Loading…</div>');
+  try{const sn=showAll?null:wSn();const [t,c]=await Promise.all([wConnPins(name,{sn}),wFind(name,{max:3})]);
+    const comp=c.find(x=>x[0].toUpperCase()===name.toUpperCase());
+    let h=comp?`<div class="kv"><b>${esc(comp[0])}</b> · ${esc(WCTYPE[comp[1]]||'')}${comp[4]?' · '+esc(comp[4]):''}${comp[5]?'<br>ATA '+esc(comp[5]):''}<br>${wDrawLinks(wComp(comp).drawings.slice(0,8),comp[0])}</div>`:'';
+    if(t.length){const T=t[0];
+      h+=`<div class="hint" style="margin:10px 0 6px">${wSnNote()}${T.total>T.rows.length?` ${T.total-T.rows.length} wire${T.total-T.rows.length>1?'s':''} for other serials hidden · <a href="#" id="wAll">Show all</a>`:''}</div>
+      <div class="pwrap"><table class="ptable"><colgroup><col style="width:13%"><col style="width:35%"><col style="width:30%"><col style="width:22%"></colgroup><tr><th>Pin</th><th>Wire</th><th>Far end</th><th>S/N</th></tr>${T.rows.map(r=>`<tr><td>${esc(r[0]||'—')}</td><td><span class="wirecell" data-wire="${esc(r[2])}">${esc(r[2])}</span>${r[3]?`<div class="sub">${esc(r[3])}</div>`:''}</td><td>${r[8]?`<span class="far" data-pins="${esc(r[8])}">${esc(r[8])}</span>${r[7]?`<div class="sub">pin ${esc(r[7])}</div>`:''}`:'—'}</td><td class="eff">${esc(effShort(r[10]))}</td></tr>`).join('')}</table></div>
+      <div class="hint">Tap a wire to trace it end to end, or a far end to open its pin-out. Source: WDM wire lists ${[...new Set(T.rows.map(r=>r[11]))].slice(0,4).map(d=>{const r=T.rows.find(x=>x[11]===d);return `<span class="dlink" data-d="${d}" data-p="${r[12]}" data-hl="${esc(name)}">${esc((DATA.catalog[d]||{}).ata||'')} p${r[12]}</span>`}).join(' ')}</div>`}
+    else h+='<div class="errbox">No wire list rows for this designator. Units (e.g. 171A1) have their wires on their connectors (171A1P1, 171A1P2…): use Find Component.</div>';
+    $('#modalBody').innerHTML=h;wBind($('#modalBody'));const a=$('#wAll');if(a)a.onclick=e=>{e.preventDefault();wShowPins(name,true)};
+  }catch(e){$('#modalBody').innerHTML=`<div class="errbox">${esc(e.message)}</div>`}
+}
+async function wShowWire(w,showAll){
+  showModal(`WDM wire ${w}`,'<div class="hint">Tracing…</div>');
+  try{const r=await wTrace(w,{sn:showAll?null:wSn()});
+    $('#modalBody').innerHTML=(r.length?`<div class="hint" style="margin-bottom:8px">${wSnNote()}</div><div class="pwrap"><table class="ptable"><colgroup><col style="width:30%"><col style="width:24%"><col style="width:24%"><col style="width:22%"></colgroup><tr><th>Wire</th><th>End 1</th><th>End 2</th><th>S/N</th></tr>${r.map(x=>`<tr><td>${esc(x.wire)}<div class="sub"><span class="dlink" data-d="${x.doc_id}" data-p="${x.pdf_page}" data-hl="${esc(x.wire.replace(/\(.*$/,''))}">${esc((DATA.catalog[x.doc_id]||{}).ata||'')} p${x.pdf_page}</span></div></td><td><span class="far" data-pins="${esc(x.end1.replace(/-[^-]*$/,''))}">${esc(x.end1.replace(/-([^-]*)$/,''))}</span><div class="sub">pin ${esc(x.end1.replace(/^.*-/,''))}</div></td><td>${x.end2.startsWith('(')?esc(x.end2):`<span class="far" data-pins="${esc(x.end2.replace(/-[^-]*$/,''))}">${esc(x.end2.replace(/-([^-]*)$/,''))}</span><div class="sub">pin ${esc(x.end2.replace(/^.*-/,''))}</div>`}</td><td class="eff">${esc(effShort(x.effectivity))}</td></tr>`).join('')}</table></div>`:'<div class="errbox">No wire with that number'+(wSn()&&!showAll?` for S/N ${wSn()} · <a href="#" id="wAllW">search all serials</a>`:'')+'.</div>');
+    wBind($('#modalBody'));const a=$('#wAllW');if(a)a.onclick=e=>{e.preventDefault();wShowWire(w,true)};
+  }catch(e){$('#modalBody').innerHTML=`<div class="errbox">${esc(e.message)}</div>`}
+}
+async function wDo(){
+  const q=$('#wQuery').value.trim();if(!q||!DATA.ready)return;const mode=$('#wMode').value;
+  if(!DATA.manifest.wiring){$('#wResults').innerHTML='<div class="errbox">The wiring index is not in this data set yet.</div>';return}
+  if(mode==='pins'){wShowPins(q.toUpperCase());return}if(mode==='wire'){wShowWire(q.toUpperCase());return}
+  $('#wResults').innerHTML='<div class="hint">Searching…</div>';
+  try{const r=await wFind(q,{max:40});
+    $('#wResults').innerHTML=r.length?r.map(c=>`<div class="res"${c[6]?` data-pins="${esc(c[0])}"`:''}><div class="h"><span class="mt">${WBADGE[c[1]]||c[1]}</span><span class="ttl">${esc(c[0])}</span><span class="lb">${esc(c[4]||'')}</span></div>
+      <div class="sn">${c[5]?'ATA '+esc(c[5])+' · ':''}${c[6]?c[6]+' wires — tap for pin-out':c[1]==='D'?'unit — open a connector for its pins':'no pins'}</div><div style="margin-top:6px">${wDrawLinks(wComp(c).drawings.slice(0,6),c[0])}</div></div>`).join(''):'<div class="hint">No match. Try a reference designator (171A1, 292A1P1, 331A1J7), a ground stud (E4007D) or words from the equipment name.</div>';
+    wBind($('#wResults'));
+  }catch(e){$('#wResults').innerHTML=`<div class="errbox">${esc(e.message)}</div>`}
+}
+$('#wGo').onclick=wDo;$('#wQuery').addEventListener('keydown',e=>{if(e.key==='Enter')wDo()});
 /* ═════════════════ BOOT ═════════════════ */
 (async function boot(){
   renderFaultChips();renderFollowChips();
